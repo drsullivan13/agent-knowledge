@@ -5,8 +5,12 @@
 
 ### Problem / Observation
 
-[Describe the problem encountered or observation made]
+[What happened, what error, what was confusing]
 
 ### Resolution / Insight
 
-[Describe the solution, workaround, or key insight]
+[The fix, the answer, the key insight]
+
+### Commands / Code
+
+[Exact commands or code snippets that worked -- this is the most valuable part]
