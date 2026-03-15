@@ -91,3 +91,36 @@ python3 -m kalshi_agent.backtest_probe \
   --start-date 2025-03-01 --end-date 2025-04-01 --cities NYC --diagnostics
 ```
 
+---
+
+## Backtest entry snapshots should use ask (not midpoint) for YES taker fills
+**Date:** 2026-03-15
+**Context:** kalshi-agent weather backtest pricing accuracy
+**Tags:** kalshi, backtest, entry-price, bid-ask, taker, pnl
+
+### Problem / Observation
+`_extract_entry_snapshot_from_candles()` used `(bid + ask) / 2` when both quotes existed. But `PaperTrader.place_yes_order()` models a taker YES buy, so executable cost should be the ask side. Midpoint pricing can admit unrealistic candidates (especially very wide spreads) and distort short-window autotune outcomes.
+
+### Resolution / Insight
+Use ask as `entry_probability` when bid+ask are present, still recording spread/depth for risk filters. Also avoid truthy `or` fallback for numeric fields (`0.0` is falsy) by selecting the first non-`None` parsed value.
+
+### Commands / Code
+```python
+def _first_non_none(*values: float | None) -> float | None:
+    for value in values:
+        if value is not None:
+            return value
+    return None
+
+bid = _first_non_none(_quote_value(yes_bid, "open"), _quote_value(yes_bid, "close"))
+ask = _first_non_none(_quote_value(yes_ask, "open"), _quote_value(yes_ask, "close"))
+
+if bid is not None and ask is not None and bid > 0.0 and ask > 0.0:
+    return MarketPricingSnapshot(
+        entry_probability=_clamp_probability(ask),
+        bid_ask_spread_probability=max(0.0, ask - bid),
+        available_depth_contracts=depth,
+        source=source,
+    )
+```
+
