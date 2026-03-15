@@ -39,3 +39,36 @@ def apply_live_defaults(secret_dir: Path = _project_root() / ".secrets") -> dict
 self.assertEqual(os.path.realpath(actual), os.path.realpath(expected))
 ```
 
+---
+
+## Multi-city walk-forward probes can hit Kalshi historical read timeouts
+**Date:** 2026-03-15
+**Context:** kalshi-agent backtest tuning probes
+**Tags:** kalshi, backtest, walkforward, timeout, diagnostics
+
+### Problem / Observation
+`python -m kalshi_agent.backtest_walkforward_probe` with long date ranges and multiple cities can fail with `TimeoutError: The read operation timed out` while fetching historical event payloads from Kalshi.
+
+### Resolution / Insight
+For tuning and regression comparisons, run a stable single-city baseline command (e.g., `NYC`) first, then use explicit strict-vs-tuned risk overrides to prove throughput deltas. Use multi-city backtest diagnostics on the lighter `backtest_probe` command for blocker analysis.
+
+### Commands / Code
+```bash
+# Stable tuning baseline (single city)
+KALSHI_MOCK_MODE=true python3 -m kalshi_agent.backtest_walkforward_probe \
+  --start-date 2025-01-01 --end-date 2025-06-01 --cities NYC --compact
+
+# Strict-vs-tuned comparison without editing config files
+KALSHI_MOCK_MODE=true python3 -m kalshi_agent.backtest_walkforward_probe \
+  --start-date 2025-01-01 --end-date 2025-06-01 --cities NYC --compact \
+  --risk-min-entry-price-probability 0.05 --risk-max-entry-price-probability 0.90 \
+  --risk-min-model-probability 0.52 --risk-max-model-probability 0.98 \
+  --risk-max-bid-ask-spread-probability 0.08 --risk-min-book-depth-contracts 20
+
+# Multi-city blocker analysis with diagnostics (faster than walk-forward)
+KALSHI_MOCK_MODE=true python3 -m kalshi_agent.backtest_probe \
+  --start-date 2025-01-01 --end-date 2025-04-01 \
+  --cities NYC,CHI,LAX,MIA,AUS --max-events-per-city 35 \
+  --target-modeled-events-per-city 8 --max-markets-to-price 4 --diagnostics
+```
+
