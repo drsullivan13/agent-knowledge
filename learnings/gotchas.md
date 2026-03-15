@@ -152,3 +152,29 @@ for year in range(history_start.year, history_end.year + 1):
     )
 ```
 
+---
+
+## Kalshi `get_markets` can reject `status=active` on some environments
+**Date:** 2026-03-15
+**Context:** kalshi-agent live trading loop market scan
+**Tags:** kalshi, api, markets, live-execution, error-handling
+
+### Problem / Observation
+Calling `GET /markets` with `status=active` may return HTTP 400 (`invalid status filter`) depending on API environment/cluster behavior.
+
+### Resolution / Insight
+Treat this as a recoverable API error in the trading loop: log the failure for that cycle and continue to the next poll interval without crashing or committing partial trade state.
+
+### Commands / Code
+```bash
+KALSHI_MOCK_MODE=true POLL_INTERVAL_SECONDS=1 KALSHI_MAX_CYCLES=2 python3 -m kalshi_agent
+```
+
+```python
+try:
+    active_markets = kalshi.get_markets(status="active", limit=1000)
+except TransportError as exc:
+    # Log and continue next cycle
+    print({"api_error": str(exc)})
+```
+
