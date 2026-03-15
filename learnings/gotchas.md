@@ -124,3 +124,31 @@ if bid is not None and ask is not None and bid > 0.0 and ask > 0.0:
     )
 ```
 
+---
+
+## NCEI daily summary fetches should be batched per year
+**Date:** 2026-03-15
+**Context:** kalshi-agent NCEI historical backtest integration
+**Tags:** ncei, noaa, backtest, pagination, limits, historical-data
+
+### Problem / Observation
+NOAA NCEI `cdo-web/api/v2/data` can return only up to `limit=1000` rows per request. Pulling 5-10 years of `TMAX/TMIN` in one request can silently underfetch historical temperature rows.
+
+### Resolution / Insight
+Batch `get_daily_summaries()` calls by calendar year, merge rows, then dedupe by observed date. This keeps each request under the row cap and consistently retrieves month-matched history for empirical distributions.
+
+### Commands / Code
+```python
+for year in range(history_start.year, history_end.year + 1):
+    year_start = max(history_start, date(year, 1, 1))
+    year_end = min(history_end, date(year, 12, 31))
+    payload = ncei.get_daily_summaries(
+        station_id=station_id,
+        start_date=year_start.isoformat(),
+        end_date=year_end.isoformat(),
+        data_types=("TMAX", "TMIN"),
+        units="standard",
+        limit=1000,
+    )
+```
+
