@@ -216,3 +216,31 @@ except TransportError as exc:
     raise
 ```
 
+---
+
+## Python signal handlers + long `time.sleep()` can delay shutdown indefinitely
+**Date:** 2026-03-15
+**Context:** kalshi-agent trading loop graceful shutdown
+**Tags:** python, signals, sleep, graceful-shutdown, sigint, sigterm
+
+### Problem / Observation
+Installing SIGINT/SIGTERM handlers that only set a shutdown flag does not guarantee an immediate exit when the loop is in a long `time.sleep()` call. The process can remain blocked for the full poll interval.
+
+### Resolution / Insight
+Use chunked sleep (`<=1s`) and re-check the shutdown flag between chunks. This lets signal handlers request shutdown while preserving "finish current cycle" semantics and exiting promptly after the cycle or current sleep chunk.
+
+### Commands / Code
+```python
+def _sleep_until_next_cycle(self) -> None:
+    remaining = max(0.0, float(self.poll_interval_seconds))
+    while remaining > 0.0 and not self.shutdown_requested:
+        chunk = min(remaining, 1.0)
+        self.sleep_fn(chunk)
+        remaining -= chunk
+```
+
+```python
+def _handle_shutdown(signum: int, _frame: Any) -> None:
+    runner.request_shutdown(signal.Signals(signum).name)
+```
+
