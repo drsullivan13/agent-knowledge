@@ -10,4 +10,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Skills must live in global skill dirs | learnings/gotchas.md | skills, factory, configuration, droids, agents | 2026-02-07 |
 | macOS tempfile paths can flip between /var and /private/var | learnings/gotchas.md | macos, pathlib, tempfile, symlink, tests | 2026-03-15 |
 | Multi-city walk-forward probes can hit Kalshi historical read timeouts | learnings/gotchas.md | kalshi, backtest, walkforward, timeout, diagnostics | 2026-03-15 |
+| Short single-city backtest probes can be blocked by entry price bounds | learnings/gotchas.md | kalshi, backtest, diagnostics, risk-gates, entry-price | 2026-03-15 |
 | Use project venv python when pyenv blocks `python3` | learnings/tools.md | python, pyenv, venv, path, cli | 2026-03-15 |

@@ -72,3 +72,22 @@ KALSHI_MOCK_MODE=true python3 -m kalshi_agent.backtest_probe \
   --target-modeled-events-per-city 8 --max-markets-to-price 4 --diagnostics
 ```
 
+---
+
+## Short single-city backtest probes can be blocked by entry price bounds
+**Date:** 2026-03-15
+**Context:** kalshi-agent backtest probe diagnostics
+**Tags:** kalshi, backtest, diagnostics, risk-gates, entry-price
+
+### Problem / Observation
+On `python3 -m kalshi_agent.backtest_probe --start-date 2025-03-01 --end-date 2025-04-01 --cities NYC --diagnostics`, changing `TemperatureForecaster` EWMA/trend weights and `RollingErrorCalibrator` sigma behavior did not move trade count off zero. Diagnostics stayed dominated by `entry_price_out_of_bounds` and `rank_cutoff`.
+
+### Resolution / Insight
+If diagnostics are dominated by entry bounds, forecast tuning alone is often insufficient. Check entry snapshot sourcing and entry-price risk bounds before iterating on forecaster parameters.
+
+### Commands / Code
+```bash
+python3 -m kalshi_agent.backtest_probe \
+  --start-date 2025-03-01 --end-date 2025-04-01 --cities NYC --diagnostics
+```
+
