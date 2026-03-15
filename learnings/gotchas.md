@@ -178,3 +178,41 @@ except TransportError as exc:
     print({"api_error": str(exc)})
 ```
 
+---
+
+## Kalshi order placement/cancel endpoints are portfolio-scoped
+**Date:** 2026-03-15
+**Context:** kalshi-agent live execution + monitoring milestone
+**Tags:** kalshi, api, orders, transport, delete, compatibility
+
+### Problem / Observation
+Older client code used `POST /markets/{ticker}/orders` for placement and `POST /portfolio/orders/{id}/cancel` for cancel. Current Kalshi docs use portfolio-scoped endpoints and DELETE for cancel.
+
+### Resolution / Insight
+Use `POST /trade-api/v2/portfolio/orders` with `ticker` in body for placement, and `DELETE /trade-api/v2/portfolio/orders/{order_id}` for cancel. Add a `delete()` method to the shared transport protocol/implementation and normalize `status="active"` to `"open"` for market listing with a 400 fallback retry that omits status.
+
+### Commands / Code
+```python
+# placement
+url = f"{base_url}/portfolio/orders"
+headers = signer.headers_for("POST", url)
+transport.post(url, headers=headers, body={"ticker": ticker, ...})
+
+# cancel
+url = f"{base_url}/portfolio/orders/{order_id}"
+headers = signer.headers_for("DELETE", url)
+transport.delete(url, headers=headers)
+```
+
+```python
+def _normalize_market_status(status: str) -> str:
+    return "open" if status.strip().lower() == "active" else status.strip().lower()
+
+try:
+    return transport.get(".../markets", params={"status": _normalize_market_status(status)})
+except TransportError as exc:
+    if status and "HTTP 400" in str(exc):
+        return transport.get(".../markets", params={"limit": limit})
+    raise
+```
+
