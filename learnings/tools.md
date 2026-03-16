@@ -27,3 +27,25 @@ import sys
 print(sys.version)
 PY
 ```
+
+---
+
+## `.factory/init.sh` may append Terraform ignores into `.gitignore`
+**Date:** 2026-03-16
+**Context:** Factory mission setup scripts in kalshi-agent
+**Tags:** git, init-script, gitignore, terraform, factory
+
+### Problem / Observation
+
+Running the repo's `.factory/init.sh` can modify `.gitignore` by appending Terraform patterns (`*.tfstate`, `.terraform/`, `terraform.tfvars`) when they are missing. This creates unrelated working-tree diffs before feature work starts.
+
+### Resolution / Insight
+
+After running init, check `git status` and explicitly `git restore .gitignore` if that diff is unrelated to your assigned feature. Keep only scoped feature changes in your commit.
+
+### Commands / Code
+
+```bash
+git -C /path/to/repo status --short
+git -C /path/to/repo restore .gitignore
+```
