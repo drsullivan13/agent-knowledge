@@ -16,6 +16,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Kalshi `get_markets` can reject `status=active` on some environments | learnings/gotchas.md | kalshi, api, markets, live-execution, error-handling | 2026-03-15 |
 | Kalshi order placement/cancel endpoints are portfolio-scoped | learnings/gotchas.md | kalshi, api, orders, transport, delete, compatibility | 2026-03-15 |
 | Python signal handlers + long `time.sleep()` can delay shutdown indefinitely | learnings/gotchas.md | python, signals, sleep, graceful-shutdown, sigint, sigterm | 2026-03-15 |
+| Terraform `templatefile` needs `$${VAR}` for literal shell expansion | learnings/gotchas.md | terraform, templatefile, user-data, bash, escaping | 2026-03-15 |
 | Use project venv python when pyenv blocks `python3` | learnings/tools.md | python, pyenv, venv, path, cli | 2026-03-15 |
 | `.factory/init.sh` may append Terraform ignores into `.gitignore` | learnings/tools.md | git, init-script, gitignore, terraform, factory | 2026-03-16 |
 | Export walk-forward promoted RiskConfig directly to trading-loop file | learnings/patterns.md | kalshi, walkforward, promotion, risk-config, trading-loop, integration-tests | 2026-03-15 |

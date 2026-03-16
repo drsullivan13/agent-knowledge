@@ -244,3 +244,29 @@ def _handle_shutdown(signum: int, _frame: Any) -> None:
     runner.request_shutdown(signal.Signals(signum).name)
 ```
 
+---
+
+## Terraform `templatefile` needs `$${VAR}` for literal shell expansion
+**Date:** 2026-03-15
+**Context:** Terraform EC2 user_data templates (`.tftpl`)
+**Tags:** terraform, templatefile, user-data, bash, escaping
+
+### Problem / Observation
+In a Terraform `templatefile`, plain `${...}` is parsed as Terraform interpolation. Shell expressions like `${SECRET_JSON}` or `${ECR_REPOSITORY_URL%%/*}` inside user data can break rendering or resolve unexpectedly.
+
+### Resolution / Insight
+Use Terraform placeholders only for values you want injected from HCL (for example `${aws_region}`), and escape runtime shell expansion as `$${...}` so the rendered script keeps `${...}` for bash.
+
+### Commands / Code
+```hcl
+user_data = templatefile("${path.module}/user_data.sh.tftpl", {
+  aws_region = "us-east-1"
+})
+```
+
+```bash
+AWS_REGION="${aws_region}"              # Terraform variable replacement
+SECRET_JSON="$(aws ... --region "$${AWS_REGION}")"  # Literal bash expansion
+ECR_REGISTRY="$(echo "$${ECR_REPOSITORY_URL}" | cut -d/ -f1)"
+```
+
