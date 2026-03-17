@@ -310,3 +310,30 @@ resource "aws_instance" "trading_agent" {
 }
 ```
 
+---
+
+## Apple Silicon ECR image can crash on EC2 amd64 with `exec format error`
+**Date:** 2026-03-17
+**Context:** Docker/ECR deployment for kalshi-agent on EC2 Amazon Linux 2023
+**Tags:** docker, ecr, ec2, arm64, amd64, buildx, exec-format
+
+### Problem / Observation
+After deploy, `docker ps` on EC2 showed container repeatedly restarting. `docker logs` showed `exec /usr/local/bin/python: exec format error`. The image had been pushed from a macOS Apple Silicon host as `linux/arm64`, but EC2 host architecture was `linux/amd64`.
+
+### Resolution / Insight
+Rebuild and push explicitly for `linux/amd64` using `docker buildx`, then rerun the EC2 bootstrap/user-data script (or recreate container) so EC2 pulls the corrected image.
+
+### Commands / Code
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 319025930540.dkr.ecr.us-east-1.amazonaws.com
+docker buildx build --platform linux/amd64 \
+  -t 319025930540.dkr.ecr.us-east-1.amazonaws.com/kalshi-agent:latest \
+  --push /Users/dansullivan/workspace/kalshi-agent
+
+ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-ip> \
+  'sudo bash /var/lib/cloud/instance/scripts/part-001'
+
+ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-ip> \
+  "docker ps --format 'table {{.Names}}\t{{.Status}}'"
+```
+
