@@ -270,3 +270,43 @@ SECRET_JSON="$(aws ... --region "$${AWS_REGION}")"  # Literal bash expansion
 ECR_REGISTRY="$(echo "$${ECR_REPOSITORY_URL}" | cut -d/ -f1)"
 ```
 
+---
+
+## Default VPC subnet ordering can pick an AZ that rejects `t3.micro`
+**Date:** 2026-03-17
+**Context:** Terraform EC2 deployment in fresh AWS accounts
+**Tags:** terraform, aws, ec2, subnet, availability-zone, instance-type
+
+### Problem / Observation
+Using `subnet_id = sort(data.aws_subnets.default_vpc.ids)[0]` selected `us-east-1e` in one account. `terraform apply` then failed with EC2 `RunInstances` 400: `Unsupported: Your requested instance type (t3.micro) is not supported in your requested Availability Zone`.
+
+### Resolution / Insight
+Select the subnet from AZs that currently offer the desired instance type. In Terraform, query `aws_ec2_instance_type_offerings` for `t3.micro`, filter default VPC subnets by those AZs, and pick from that filtered list.
+
+### Commands / Code
+```hcl
+data "aws_ec2_instance_type_offerings" "t3_micro" {
+  location_type = "availability-zone"
+  filter {
+    name   = "instance-type"
+    values = ["t3.micro"]
+  }
+}
+
+data "aws_subnets" "default_vpc_t3_supported" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+  filter {
+    name   = "availability-zone"
+    values = sort(data.aws_ec2_instance_type_offerings.t3_micro.locations)
+  }
+}
+
+resource "aws_instance" "trading_agent" {
+  instance_type = "t3.micro"
+  subnet_id     = sort(data.aws_subnets.default_vpc_t3_supported.ids)[0]
+}
+```
+
