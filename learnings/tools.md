@@ -92,3 +92,31 @@ PATH="/path/to/venv/bin:$PATH" /path/to/notes-exporter/exportnotes.zsh \
 # Work only with the target folder's exported Markdown
 cp -R "/path/to/output/md/iCloud-SWOL-NATION" "/path/to/swol-nation-md"
 ```
+
+---
+
+## CloudWatch `filter-log-events` with `--limit` returns earliest events unless you bound time
+**Date:** 2026-03-18
+**Context:** AWS CLI live-validation log checks
+**Tags:** aws, cloudwatch, logs, cli, validation
+
+### Problem / Observation
+
+Running `aws logs filter-log-events --log-group-name ... --limit 20` returned old bootstrap errors and missed the newest trading cycles, which made validation look stale.
+
+### Resolution / Insight
+
+Always include a recent `--start-time` (epoch ms) when validating current behavior, then parse JSON cycle payloads from that bounded window.
+
+### Commands / Code
+
+```bash
+NOW=$(date -u +%s)
+START=$(((NOW-1800)*1000))
+aws logs filter-log-events \
+  --region us-east-1 \
+  --log-group-name /kalshi-agent/trading-loop \
+  --start-time "$START" \
+  --limit 200 \
+  --output json
+```
