@@ -337,3 +337,26 @@ ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-
   "docker ps --format 'table {{.Names}}\t{{.Status}}'"
 ```
 
+---
+
+## EC2 `describe-instances` may not expose EBS encryption field reliably
+**Date:** 2026-03-18
+**Context:** AWS CLI verification after Terraform EC2 replacement
+**Tags:** aws, ec2, ebs, encryption, verification, cli
+
+### Problem / Observation
+After replacing an EC2 instance with an encrypted root volume, `aws ec2 describe-instances --query 'Reservations[].Instances[].BlockDeviceMappings[].Ebs.Encrypted'` returned `[]` even though the volume was attached and encrypted.
+
+### Resolution / Insight
+Use `describe-instances` to get the root `VolumeId`, then verify encryption via `aws ec2 describe-volumes --query 'Volumes[].Encrypted'`.
+
+### Commands / Code
+```bash
+VOL_ID=$(aws ec2 describe-instances --region us-east-1 \
+  --filters Name=tag:Project,Values=kalshi-agent Name=instance-state-name,Values=running \
+  --query 'Reservations[].Instances[].BlockDeviceMappings[].Ebs.VolumeId' --output text)
+
+aws ec2 describe-volumes --region us-east-1 --volume-ids "$VOL_ID" \
+  --query 'Volumes[].Encrypted' --output text
+```
+
