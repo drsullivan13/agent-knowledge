@@ -19,6 +19,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Terraform `templatefile` needs `$${VAR}` for literal shell expansion | learnings/gotchas.md | terraform, templatefile, user-data, bash, escaping | 2026-03-15 |
 | Use project venv python when pyenv blocks `python3` | learnings/tools.md | python, pyenv, venv, path, cli | 2026-03-15 |
 | `.factory/init.sh` may append Terraform ignores into `.gitignore` | learnings/tools.md | git, init-script, gitignore, terraform, factory | 2026-03-16 |
+| `storizzi/notes-exporter` exports all Apple Notes folders; isolate the target folder from output | learnings/tools.md | apple-notes, macos, markdown, export, applescript, cli | 2026-03-18 |
 | AWS account blocked can fail EC2 RunInstances during Terraform apply | resolutions/aws-account-blocked-ec2-runinstances.md | aws, terraform, ec2, runinstances, account-blocked, deployment | 2026-03-16 |
 | Default VPC subnet ordering can pick an AZ that rejects `t3.micro` | learnings/gotchas.md | terraform, aws, ec2, subnet, availability-zone, instance-type | 2026-03-17 |
 | Apple Silicon ECR image can crash on EC2 amd64 with `exec format error` | learnings/gotchas.md | docker, ecr, ec2, arm64, amd64, buildx, exec-format | 2026-03-17 |
