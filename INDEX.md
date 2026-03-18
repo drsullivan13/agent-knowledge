@@ -26,4 +26,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Default VPC subnet ordering can pick an AZ that rejects `t3.micro` | learnings/gotchas.md | terraform, aws, ec2, subnet, availability-zone, instance-type | 2026-03-17 |
 | Apple Silicon ECR image can crash on EC2 amd64 with `exec format error` | learnings/gotchas.md | docker, ecr, ec2, arm64, amd64, buildx, exec-format | 2026-03-17 |
 | EC2 `describe-instances` may not expose EBS encryption field reliably | learnings/gotchas.md | aws, ec2, ebs, encryption, verification, cli | 2026-03-18 |
+| Terraform EC2 `user_data` updates may not recreate instances | learnings/gotchas.md | terraform, aws, ec2, user-data, replacement, deployment | 2026-03-18 |
 | Export walk-forward promoted RiskConfig directly to trading-loop file | learnings/patterns.md | kalshi, walkforward, promotion, risk-config, trading-loop, integration-tests | 2026-03-15 |
