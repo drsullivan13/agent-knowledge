@@ -120,3 +120,41 @@ aws logs filter-log-events \
   --limit 200 \
   --output json
 ```
+
+---
+
+## Factory `Read` may not natively open PDFs larger than 3MB
+**Date:** 2026-03-18
+**Context:** Factory CLI, local PDF analysis
+**Tags:** factory, pdf, read-tool, python, pypdf, workaround
+
+### Problem / Observation
+
+The Factory `Read` tool can open PDFs up to about 3MB natively. When a larger PDF was provided, the tool only reported that the file exceeded the native limit and did not expose the full contents directly.
+
+### Resolution / Insight
+
+If Python is available, use `pypdf` or `PyPDF2` from a one-off `python3` command to extract text from the needed pages. This is a reliable fallback for local PDF inspection when the built-in PDF reader limit is exceeded.
+
+### Commands / Code
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+
+pdf = Path('/absolute/path/to/file.pdf')
+for mod in ('pypdf', 'PyPDF2'):
+    try:
+        m = __import__(mod)
+        reader = m.PdfReader(str(pdf))
+        text = []
+        for i, page in enumerate(reader.pages[:20]):
+            text.append(f'--- PAGE {i+1} ---\n' + (page.extract_text() or ''))
+        print('\n'.join(text)[:30000])
+        break
+    except Exception as e:
+        print(f'{mod} unavailable: {e}')
+else:
+    print('No PDF reader module available')
+PY
+```

@@ -360,3 +360,32 @@ aws ec2 describe-volumes --region us-east-1 --volume-ids "$VOL_ID" \
   --query 'Volumes[].Encrypted' --output text
 ```
 
+---
+
+## Terraform EC2 `user_data` updates may not recreate instances
+**Date:** 2026-03-18
+**Context:** Terraform AWS EC2 deploys with bootstrap scripts
+**Tags:** terraform, aws, ec2, user-data, replacement, deployment
+
+### Problem / Observation
+Changing `aws_instance.user_data` updated the instance in-place and did not recreate it. The running container kept using old bootstrap behavior (old image tag/env values), even though Terraform apply succeeded.
+
+### Resolution / Insight
+Set `user_data_replace_on_change = true` on `aws_instance` so future `user_data` diffs force replacement. If user_data already changed before this flag was enabled, make one more user_data edit and apply again to trigger replacement.
+
+### Commands / Code
+```hcl
+resource "aws_instance" "trading_agent" {
+  # ...
+  user_data_replace_on_change = true
+  user_data = templatefile("${path.module}/user_data.sh.tftpl", {
+    # ...
+  })
+}
+```
+
+```bash
+cd /Users/dansullivan/workspace/kalshi-agent/infra
+terraform apply -auto-approve
+```
+
