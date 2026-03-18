@@ -414,3 +414,30 @@ ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-
   "docker exec kalshi-agent python -c 'import json, os, urllib.request; u=os.environ[\"SLACK_WEBHOOK_URL\"]; d=json.dumps({\"text\":\"ec2 webhook validation\"}).encode(); r=urllib.request.urlopen(urllib.request.Request(u,data=d,headers={\"Content-Type\":\"application/json\"},method=\"POST\"),timeout=10); print(r.status); print(r.read().decode())'"
 ```
 
+---
+
+## Terraform destroy can fail on non-empty ECR repositories
+**Date:** 2026-03-17
+**Context:** Terraform AWS teardown for kalshi-agent live-validation cleanup
+**Tags:** terraform, aws, ecr, destroy, teardown, repository-not-empty
+
+### Problem / Observation
+
+`terraform destroy -auto-approve` failed after tearing down most resources with `RepositoryNotEmptyException` on `aws_ecr_repository` because the repo still contained tagged images.
+
+### Resolution / Insight
+
+When `force_delete` is not enabled on the ECR repository resource, explicitly delete all image digests first (`aws ecr batch-delete-image`) and rerun `terraform destroy`.
+
+### Commands / Code
+
+```bash
+# 1) Remove all image digests from the repo
+for digest in $(aws ecr list-images --repository-name kalshi-agent --query 'imageIds[*].imageDigest' --output text | tr '\t' '\n' | sort -u); do
+  aws ecr batch-delete-image --repository-name kalshi-agent --image-ids imageDigest="$digest"
+done
+
+# 2) Retry destroy
+cd /Users/dansullivan/workspace/kalshi-agent/infra && terraform destroy -auto-approve
+```
+
