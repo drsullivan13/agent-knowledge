@@ -389,3 +389,28 @@ cd /Users/dansullivan/workspace/kalshi-agent/infra
 terraform apply -auto-approve
 ```
 
+---
+
+## Slack webhooks can return plain-text `ok`, which breaks strict JSON transport parsing
+**Date:** 2026-03-18
+**Context:** kalshi-agent monitoring alerts on EC2
+**Tags:** slack, webhook, json, urllib, transport, monitoring, ec2
+
+### Problem / Observation
+
+Triggering `AlertDispatcher.send_daily_summary()` from the running EC2 container returned `{"channel":"file","sent":false,...}` with `Invalid JSON response ...` even though the webhook endpoint accepted the request.
+
+### Resolution / Insight
+
+Slack incoming webhooks commonly return HTTP 200 with plain-text `ok`, not JSON. A transport layer that always JSON-decodes response bodies can raise false failures for successful Slack sends. For live validation, verify by issuing a direct POST from inside the EC2 container and checking `200` + `ok`.
+
+### Commands / Code
+
+```bash
+ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-ip> \
+  "docker exec kalshi-agent python -c 'import json; from kalshi_agent.monitoring.alerts import AlertDispatcher; print(AlertDispatcher().send_daily_summary({\"source\":\"manual\"}))'"
+
+ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-ip> \
+  "docker exec kalshi-agent python -c 'import json, os, urllib.request; u=os.environ[\"SLACK_WEBHOOK_URL\"]; d=json.dumps({\"text\":\"ec2 webhook validation\"}).encode(); r=urllib.request.urlopen(urllib.request.Request(u,data=d,headers={\"Content-Type\":\"application/json\"},method=\"POST\"),timeout=10); print(r.status); print(r.read().decode())'"
+```
+
