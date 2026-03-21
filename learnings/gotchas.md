@@ -441,3 +441,33 @@ done
 cd /Users/dansullivan/workspace/kalshi-agent/infra && terraform destroy -auto-approve
 ```
 
+---
+
+## Argparse help strings treat `%` as interpolation placeholders
+**Date:** 2026-03-21
+**Context:** Python argparse CLI flags
+**Tags:** python, argparse, cli, formatting, help-text
+
+### Problem / Observation
+
+`python3 -m kalshi_agent.backtest_probe --help` crashed with:
+`ValueError: unsupported format character 'b' (0x62)` after adding help text that included `95% bootstrap ...`.
+
+### Resolution / Insight
+
+`argparse` uses old-style `%` formatting for help text internally. Literal percent signs must be escaped as `%%` in `help=` strings.
+
+### Commands / Code
+
+```python
+parser.add_argument(
+    "--with-ci",
+    action="store_true",
+    help="Compute 95%% bootstrap confidence intervals for PnL, Sharpe, win rate, and Brier",
+)
+```
+
+```bash
+python3 -m kalshi_agent.backtest_probe --help
+```
+
