@@ -42,3 +42,36 @@ python3 -m pytest tests/test_integration.py -v --tb=short
 python3 -m kalshi_agent.live_probe
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Verify backtest cache by forcing a bad base URL on replay
+**Date:** 2026-03-21
+**Context:** kalshi-agent/python/backtest cache validation
+**Tags:** kalshi, backtest, sqlite, cache, validation, replay
+
+### Problem / Observation
+
+A second backtest run can appear faster, but that alone does not prove zero outbound HTTP calls. We needed a deterministic way to prove replay came entirely from SQLite cache.
+
+### Resolution / Insight
+
+Run the first backtest normally to populate cache, then run the same command again with `KALSHI_BASE_URL` pointed at an invalid localhost endpoint. If replay still succeeds and outputs are identical, the run did not depend on HTTP.
+
+### Commands / Code
+
+```bash
+cd /Users/dansullivan/workspace/kalshi-agent
+python3 -m kalshi_agent.backtest_probe \
+  --start-date 2025-01-01 --end-date 2025-03-31 \
+  --cities NYC,CHI,LAX,MIA,AUS \
+  --disable-ncei-history \
+  --cache-path data/historical_data_cache_probe.db
+
+KALSHI_BASE_URL=http://127.0.0.1:1/trade-api/v2 \
+python3 -m kalshi_agent.backtest_probe \
+  --start-date 2025-01-01 --end-date 2025-03-31 \
+  --cities NYC,CHI,LAX,MIA,AUS \
+  --disable-ncei-history \
+  --cache-path data/historical_data_cache_probe.db
+```
