@@ -158,3 +158,26 @@ else:
     print('No PDF reader module available')
 PY
 ```
+
+---
+
+## `data/` gitignore pattern can hide new files under tracked `kalshi_agent/data/`
+**Date:** 2026-03-21
+**Context:** kalshi-agent Python feature work
+**Tags:** git, gitignore, tracked-dirs, add-force, diagnostics
+
+### Problem / Observation
+
+The repo `.gitignore` had a broad `data/` rule. Existing files under `kalshi_agent/data/` were already tracked, but a new file added under that tree (`kalshi_agent/data/weather/forecast_snapshots.py`) was silently ignored and did not appear in `git status --short`.
+
+### Resolution / Insight
+
+Use `git check-ignore -v <path>` whenever a newly created file is missing from status output. If the file is intentionally needed, stage it with `git add -f <path>`.
+
+### Commands / Code
+
+```bash
+git -C /path/to/repo check-ignore -v kalshi_agent/data/weather/forecast_snapshots.py
+git -C /path/to/repo add -f kalshi_agent/data/weather/forecast_snapshots.py
+git -C /path/to/repo status --short
+```

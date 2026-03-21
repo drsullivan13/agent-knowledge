@@ -31,3 +31,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Terraform destroy can fail on non-empty ECR repositories | learnings/gotchas.md | terraform, aws, ecr, destroy, teardown, repository-not-empty | 2026-03-17 |
 | Export walk-forward promoted RiskConfig directly to trading-loop file | learnings/patterns.md | kalshi, walkforward, promotion, risk-config, trading-loop, integration-tests | 2026-03-15 |
 | Verify backtest cache by forcing a bad base URL on replay | learnings/patterns.md | kalshi, backtest, sqlite, cache, validation, replay | 2026-03-21 |
+| `data/` gitignore pattern can hide new files under tracked `kalshi_agent/data/` | learnings/tools.md | git, gitignore, tracked-dirs, add-force, diagnostics | 2026-03-21 |
