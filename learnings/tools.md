@@ -181,3 +181,32 @@ git -C /path/to/repo check-ignore -v kalshi_agent/data/weather/forecast_snapshot
 git -C /path/to/repo add -f kalshi_agent/data/weather/forecast_snapshots.py
 git -C /path/to/repo status --short
 ```
+
+---
+
+## Backtest cache SQLite tables use `event_date` (not `date`)
+**Date:** 2026-03-21
+**Context:** kalshi-agent cache verification
+**Tags:** sqlite, backtest-cache, schema, diagnostics
+
+### Problem / Observation
+
+Ad-hoc SQL checks against `data/backtest_cache.db` failed with `sqlite3.OperationalError: no such column: date` when querying cache coverage using `MIN(date), MAX(date)`.
+
+### Resolution / Insight
+
+The cache tables (`events`, `candles`, `orderbooks`, `forecast_snapshots`) store coverage under the `event_date` column. Use `event_date` for min/max and span checks.
+
+### Commands / Code
+
+```bash
+python3 - <<'PY'
+import sqlite3
+conn = sqlite3.connect('data/backtest_cache.db')
+cur = conn.cursor()
+for table in ('events','candles','orderbooks','forecast_snapshots'):
+    cur.execute(f"SELECT COUNT(*), MIN(event_date), MAX(event_date) FROM {table}")
+    print(table, cur.fetchone())
+conn.close()
+PY
+```

@@ -34,3 +34,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Export walk-forward promoted RiskConfig directly to trading-loop file | learnings/patterns.md | kalshi, walkforward, promotion, risk-config, trading-loop, integration-tests | 2026-03-15 |
 | Verify backtest cache by forcing a bad base URL on replay | learnings/patterns.md | kalshi, backtest, sqlite, cache, validation, replay | 2026-03-21 |
 | `data/` gitignore pattern can hide new files under tracked `kalshi_agent/data/` | learnings/tools.md | git, gitignore, tracked-dirs, add-force, diagnostics | 2026-03-21 |
+| Backtest cache SQLite tables use `event_date` (not `date`) | learnings/tools.md | sqlite, backtest-cache, schema, diagnostics | 2026-03-21 |
