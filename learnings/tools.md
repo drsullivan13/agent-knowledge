@@ -210,3 +210,26 @@ for table in ('events','candles','orderbooks','forecast_snapshots'):
 conn.close()
 PY
 ```
+
+---
+
+## Ignored `data/` paths can block staging modified tracked artifacts
+**Date:** 2026-03-21
+**Context:** kalshi-agent walkforward artifact refresh
+**Tags:** git, gitignore, tracked-files, data, add-force
+
+### Problem / Observation
+
+`git add data/walkforward_results*.json` failed with `The following paths are ignored by one of your .gitignore files: data` even though the files were already tracked and modified.
+
+### Resolution / Insight
+
+When `data/` is ignored broadly, force-add (`-f`) is the reliable way to stage these artifact files explicitly.
+
+### Commands / Code
+
+```bash
+git -C /path/to/repo status --short
+git -C /path/to/repo add -f data/walkforward_results.json data/walkforward_results_strict.json data/walkforward_results_moderate.json
+git -C /path/to/repo status --short
+```
