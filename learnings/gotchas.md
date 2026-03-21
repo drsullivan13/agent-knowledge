@@ -264,6 +264,41 @@ user_data = templatefile("${path.module}/user_data.sh.tftpl", {
 })
 ```
 
+---
+
+## Walk-forward probes can appear hung when each backtest run re-fetches uncached data
+**Date:** 2026-03-21
+**Context:** kalshi-agent comprehensive walk-forward validation
+**Tags:** kalshi, walkforward, backtest, cache, runtime, ncei
+
+### Problem / Observation
+`backtest_walkforward_probe` over a 6+ month range repeatedly timed out (>5 minutes) even for tiny windows because each window executes multiple backtests, and uncached event/candle lookups (plus NCEI history fetches) made each run very slow.
+
+### Resolution / Insight
+Use a dedicated walk-forward cache DB with a stable cache namespace, run walk-forward in cache-only mode (skip live fetches on cache miss), and disable NCEI history inside walk-forward train/validation configs. This made full 180-day walk-forward runs complete within the command budget and allowed threshold verification.
+
+### Commands / Code
+```python
+# walkforward.py
+backtest_cache = BacktestCache(
+    db_path=_project_root() / "data" / "walkforward_backtest_cache.db",
+    schema_version=BACKTEST_CACHE_SCHEMA_VERSION,
+    config_hash="walkforward-replay-v1",
+)
+
+# pass cache_only=True into sweep/holdout weather backtests
+```
+
+```bash
+python3 -m kalshi_agent.backtest_walkforward_probe \
+  --start-date 2025-09-17 --end-date 2026-03-15 \
+  --dimension-sweep --max-markets-options 1 --confidence-bounds 0.10-0.12 \
+  --disable-rank-cutoff-deep-sweep --disable-rank-cutoff-targeted-band-sweep \
+  --disable-rank-cutoff-auto-promote-deep --top-candidates 1 --leaderboard-size 1 \
+  --holdout-min-train-trades 1 --holdout-min-validation-trades 1 \
+  --allow-negative-validation-pnl --compact --with-ci
+```
+
 ```bash
 AWS_REGION="${aws_region}"              # Terraform variable replacement
 SECRET_JSON="$(aws ... --region "$${AWS_REGION}")"  # Literal bash expansion
