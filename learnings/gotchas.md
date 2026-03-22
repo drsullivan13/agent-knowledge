@@ -624,6 +624,60 @@ if marker:
         return float(first_price.group(1))
 ```
 
+---
+
+## `AlertDispatcher` custom transports must implement `post`, not `post_json`
+**Date:** 2026-03-22
+**Context:** kalshi-agent monitoring user-testing probes
+**Tags:** python, testing, alerts, transport, slack, kalshi
+
+### Problem / Observation
+
+An ad-hoc validation probe for Slack profit-projection text instantiated `AlertDispatcher` with a custom capture transport that only exposed `post_json(...)`. The probe then failed with `IndexError: list index out of range` because no transport call was recorded.
+
+### Resolution / Insight
+
+`AlertDispatcher._post_webhook()` uses `transport.post(url, headers=..., body=...)` whenever a custom transport is supplied and it is not an `UrllibTransport`. For local/user-testing probes, the fake transport must implement `post(...)`; implementing only `post_json(...)` will silently miss the webhook call.
+
+### Commands / Code
+
+```python
+from kalshi_agent.monitoring.alerts import AlertDispatcher
+
+
+class CaptureTransport:
+    def __init__(self):
+        self.calls = []
+
+    def post(self, url, headers=None, body=None):
+        self.calls.append({"url": url, "headers": headers, "body": body})
+        return {"status": 200, "body": "ok"}
+
+
+transport = CaptureTransport()
+dispatcher = AlertDispatcher(webhook_url="https://example.invalid/webhook", transport=transport)
+dispatcher.send_daily_summary({...})
+print(transport.calls[0]["body"]["text"])
+```
+
+```bash
+python3 - <<'PY'
+from kalshi_agent.monitoring.alerts import AlertDispatcher
+
+class CaptureTransport:
+    def __init__(self):
+        self.calls = []
+    def post(self, url, headers=None, body=None):
+        self.calls.append({"url": url, "headers": headers, "body": body})
+        return {"status": 200, "body": "ok"}
+
+transport = CaptureTransport()
+dispatcher = AlertDispatcher(webhook_url="https://example.invalid/webhook", transport=transport)
+dispatcher.send_daily_summary({"alert_type": "strategy_event", "event_type": "paper_trade"})
+print(transport.calls[0]["body"]["text"])
+PY
+```
+
 ```bash
 curl -sSL "https://gasprices.aaa.com/" -o /tmp/aaa_live.html
 curl -sSL "https://web.archive.org/web/20250115000000/https://gasprices.aaa.com/" -o /tmp/aaa_wayback.html
