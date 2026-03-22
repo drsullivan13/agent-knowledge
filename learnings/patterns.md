@@ -106,3 +106,42 @@ cd /Users/dansullivan/workspace/kalshi-agent
 python3 -m pytest tests/test_monitoring.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Keep profit projections machine-readable while rendering Slack-readable bullets
+**Date:** 2026-03-22
+**Context:** kalshi-agent/python gas paper-trade reporting
+**Tags:** slack, alerts, profit-projection, observability, gas, paper-trading
+
+### Problem / Observation
+
+Adding gas profit breakdowns as nested JSON (`profit_projection`) preserves structure for logs, but default Slack formatting prints the entire dict inline, which is hard for operators to scan.
+
+### Resolution / Insight
+
+Emit both fields in trading-loop observability for gas paper trades: (1) a structured `profit_projection` object for machines and (2) a human sentence (`profit_projection_text`) explicitly marked success-case/not-realized. In Slack formatting, special-case `profit_projection` into readable bullet lines (entry basis, bot-sized notional, normalized `$100` example) instead of dumping raw JSON.
+
+### Commands / Code
+
+```python
+if action_taken == "PAPER_TRADE" and resolved_strategy_name == "gas":
+    payload["profit_projection"] = {
+        "assumption": "success_case_projection_not_realized",
+        "side": "YES",
+        "entry_price_probability": 0.35,
+        "bot_sized_notional": {...},
+        "normalized_100_notional": {...},
+    }
+    payload["profit_projection_text"] = "Projected success-case profit (paper-only, not realized P&L): ..."
+
+# alerts.py
+if isinstance(message.get("profit_projection"), Mapping):
+    lines.extend(_format_profit_projection_lines(message["profit_projection"]))
+```
+
+```bash
+python3 -m pytest tests/test_monitoring.py -v --tb=short
+python3 -m pytest tests/test_trading_loop.py -v --tb=short -k gas
+python3 -m pytest tests/ -v --tb=short
+```
