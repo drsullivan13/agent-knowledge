@@ -732,3 +732,47 @@ runner = TradingLoopRunner(
 python3 -m pytest tests/test_trading_loop.py -v --tb=short -k gas
 ```
 
+---
+
+## AlertDispatcher custom transports must implement `post`, not `post_json`
+**Date:** 2026-03-22
+**Context:** kalshi-agent Slack formatting probes
+**Tags:** slack, alerts, transport, testing, probes, kalshi
+
+### Problem / Observation
+
+An ad-hoc local Slack probe used a fake transport with `post_json(...)`, then called `AlertDispatcher.send_daily_summary(...)` and tried to inspect captured webhook calls. No call was recorded and the probe crashed with `IndexError: list index out of range`.
+
+### Resolution / Insight
+
+`AlertDispatcher._post_webhook()` sends through `transport.post(...)` for any custom transport that is not the built-in `UrllibTransport`. For local capture probes and tests, implement `post(url, headers, body)` on the fake transport (matching `_FakeTransport` in `tests/test_monitoring.py`), then inspect `body["text"]`.
+
+### Commands / Code
+
+```python
+class CaptureTransport:
+    def __init__(self):
+        self.calls = []
+
+    def post(self, url, headers=None, body=None, timeout=None):
+        self.calls.append({
+            "url": url,
+            "headers": headers or {},
+            "body": body,
+            "timeout": timeout,
+        })
+        return {"status": 200, "body": "ok"}
+
+transport = CaptureTransport()
+dispatcher = AlertDispatcher(
+    webhook_url="https://example.invalid/webhook",
+    transport=transport,
+)
+dispatcher.send_daily_summary(summary)
+print(transport.calls[0]["body"]["text"])
+```
+
+```bash
+python3 -m pytest tests/test_monitoring.py -v --tb=short -k profit_projection
+```
+
