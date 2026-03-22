@@ -145,3 +145,58 @@ python3 -m pytest tests/test_monitoring.py -v --tb=short
 python3 -m pytest tests/test_trading_loop.py -v --tb=short -k gas
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Probe deployed gas profit reporting with `_log_observability` and a temporary DB path
+**Date:** 2026-03-22
+**Context:** kalshi-agent/python ec2 paper-trade rollout validation
+**Tags:** kalshi, ec2, docker, paper-trading, observability, profit-projection
+
+### Problem / Observation
+
+After rolling out gas profit-projection reporting to EC2, we needed a deterministic way to verify the deployed container could emit the new `profit_projection` and `profit_projection_text` fields without waiting for a natural gas paper trade and without touching the live paper-trade SQLite DB.
+
+### Resolution / Insight
+
+Run an in-container Python heredoc that builds the gas paper runner, overrides `KALSHI_TRADES_DB_PATH` to a throwaway file, and directly calls `TradingLoopRunner._log_observability(action_taken="PAPER_TRADE", ...)` with a synthetic gas `Signal`. This prints the exact deployed observability payload, including both bot-sized and normalized `$100` profit projections, while staying paper-only and avoiding persistent trade mutations.
+
+### Commands / Code
+
+```bash
+ssh -i .secrets/ec2_key ec2-user@3.82.212.36 'docker exec -i kalshi-agent env KALSHI_TRADES_DB_PATH=/tmp/profit-probe.db python - <<"PY"
+import os
+
+from kalshi_agent.strategies.base import Signal
+from kalshi_agent.trading_loop import build_gas_paper_runner
+
+runner = build_gas_paper_runner(env=dict(os.environ), print_fn=print)
+runner._log_observability(
+    action_taken="PAPER_TRADE",
+    reason="manual_profit_probe",
+    cycle_id="manual-profit-probe",
+    signal=Signal(
+        event_ticker="KXAAAGASW-TEST",
+        market_ticker="KXAAAGASW-TEST-B350",
+        model_probability=1.0,
+        market_probability=0.35,
+        edge=0.65,
+        recommended_notional=5.0,
+        direction="BUY",
+        side="YES",
+        confidence=1.0,
+        reason="manual_profit_probe",
+        strategy_name="gas",
+    ),
+    observation={
+        "parsed_values": {"gas_price": 3.456},
+        "consensus_values": {"KXAAAGASW-TEST-B350": 0.35},
+    },
+    release_key="gas:manual-profit-probe",
+    quantity=14,
+    price=0.35,
+    notional=5.0,
+    execution_status="paper_filled",
+)
+PY'
+```

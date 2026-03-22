@@ -48,3 +48,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | TradingLoopRunner mock mode logs `TRADE` unless `paper_trader` is attached | learnings/gotchas.md | kalshi, trading-loop, mock-mode, paper-trading, tests, observability | 2026-03-22 |
 | Format Slack text separately from structured alert logs | learnings/patterns.md | slack, alerts, logging, json, webhook, monitoring | 2026-03-22 |
 | Keep profit projections machine-readable while rendering Slack-readable bullets | learnings/patterns.md | slack, alerts, profit-projection, observability, gas, paper-trading | 2026-03-22 |
+| Probe deployed gas profit reporting with `_log_observability` and a temporary DB path | learnings/patterns.md | kalshi, ec2, docker, paper-trading, observability, profit-projection | 2026-03-22 |
