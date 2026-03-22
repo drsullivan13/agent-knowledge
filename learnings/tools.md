@@ -233,3 +233,56 @@ git -C /path/to/repo status --short
 git -C /path/to/repo add -f data/walkforward_results.json data/walkforward_results_strict.json data/walkforward_results_moderate.json
 git -C /path/to/repo status --short
 ```
+
+---
+
+## Top-level CLI packages need setuptools include patterns for `pip install -e .`
+**Date:** 2026-03-22
+**Context:** Python packaging, editable installs, module execution
+**Tags:** python, setuptools, editable-install, cli, packaging
+
+### Problem / Observation
+
+A top-level CLI package (`bot/`) worked when running from repo root (`python -m bot`) but can be missing after `pip install -e .` if setuptools package discovery only includes project packages like `kalshi_agent*`.
+
+### Resolution / Insight
+
+Include the CLI package in `[tool.setuptools.packages.find].include` so editable installs expose it reliably in fresh environments.
+
+### Commands / Code
+
+```toml
+# pyproject.toml
+[tool.setuptools.packages.find]
+include = ["kalshi_agent*", "bot*"]
+```
+
+```bash
+pip install -e /path/to/repo
+python3 -m bot paper-probe
+```
+
+---
+
+## `docker exec` needs `-i` when piping heredoc scripts into container Python
+**Date:** 2026-03-22
+**Context:** Docker, EC2 runtime validation, remote scripting over SSH
+**Tags:** docker, exec, stdin, heredoc, ssh, ec2
+
+### Problem / Observation
+
+Running `docker exec <container> python - <<'PY' ... PY` over SSH produced no script output and silently returned, even though short `python -c` checks worked.
+
+### Resolution / Insight
+
+`docker exec` does not attach stdin unless `-i` is set. Heredoc-fed scripts require `docker exec -i` so Python receives the script from stdin.
+
+### Commands / Code
+
+```bash
+# No script stdin attached (fails silently for heredoc use-cases)
+ssh ... "docker exec kalshi-agent python - <<'PY'\nprint('hello')\nPY"
+
+# Correct: attach stdin for heredoc/script piping
+ssh ... "docker exec -i kalshi-agent python - <<'PY'\nprint('hello')\nPY"
+```

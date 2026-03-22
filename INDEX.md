@@ -37,3 +37,10 @@ Scan this file first to avoid duplicating existing knowledge.
 | Backtest cache SQLite tables use `event_date` (not `date`) | learnings/tools.md | sqlite, backtest-cache, schema, diagnostics | 2026-03-21 |
 | Ignored `data/` paths can block staging modified tracked artifacts | learnings/tools.md | git, gitignore, tracked-files, data, add-force | 2026-03-21 |
 | BLS CPI release HTML keeps key metrics split across two `<pre>` blocks | learnings/gotchas.md | bls, cpi, html, parser, regex, fixtures | 2026-03-21 |
+| AAA national average text may include header labels between `Regular` and the first price | learnings/gotchas.md | aaa, gas, parser, regex, html, fixtures | 2026-03-21 |
+| Top-level CLI packages need setuptools include patterns for `pip install -e .` | learnings/tools.md | python, setuptools, editable-install, cli, packaging | 2026-03-22 |
+| BLS CPI pages expose release time as an embargo line, not `For release ...` | learnings/gotchas.md | bls, cpi, html, timestamp, parsing | 2026-03-22 |
+| Release backtest replays should use `price_previous_dollars` for consensus | learnings/gotchas.md | kalshi, backtest, orderbook, consensus, replay, cpi, gas | 2026-03-22 |
+| BLS release schedule times must be converted from US/Eastern with DST awareness | learnings/gotchas.md | bls, scheduler, timezone, dst, utc, polling | 2026-03-22 |
+| Terraform apply can fail after restoring a Secrets Manager secret unless it is imported | learnings/gotchas.md | terraform, aws, secretsmanager, import, state, ec2, deployment | 2026-03-22 |
+| `docker exec` needs `-i` when piping heredoc scripts into container Python | learnings/tools.md | docker, exec, stdin, heredoc, ssh, ec2 | 2026-03-22 |
