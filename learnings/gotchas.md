@@ -218,6 +218,29 @@ except TransportError as exc:
 
 ---
 
+## BLS release schedule times must be converted from US/Eastern with DST awareness
+**Date:** 2026-03-22
+**Context:** CPI release scheduler activation windows
+**Tags:** bls, scheduler, timezone, dst, utc, polling
+
+### Problem / Observation
+BLS schedule rows are published in Eastern Time, and treating parsed `8:30 AM` as fixed UTC-5 caused wrong activation windows after the DST switch (e.g., March releases should map to 12:30 UTC, not 13:30 UTC).
+
+### Resolution / Insight
+Interpret parsed BLS schedule datetimes as `America/New_York` and convert to UTC with `zoneinfo`. Compute active windows from that UTC instant (`release - offset` to `release + edge_decay`) so polling cadence stays correct year-round.
+
+### Commands / Code
+```python
+from datetime import UTC
+from zoneinfo import ZoneInfo
+
+eastern = ZoneInfo("America/New_York")
+release_et = parsed_release_naive.replace(tzinfo=eastern)
+release_utc = release_et.astimezone(UTC)
+```
+
+---
+
 ## Python signal handlers + long `time.sleep()` can delay shutdown indefinitely
 **Date:** 2026-03-15
 **Context:** kalshi-agent trading loop graceful shutdown
@@ -478,6 +501,31 @@ cd /Users/dansullivan/workspace/kalshi-agent/infra && terraform destroy -auto-ap
 
 ---
 
+## Terraform apply can fail after restoring a Secrets Manager secret unless it is imported
+**Date:** 2026-03-22
+**Context:** kalshi-agent EC2 deployment (Terraform + Secrets Manager)
+**Tags:** terraform, aws, secretsmanager, import, state, ec2, deployment
+
+### Problem / Observation
+
+`terraform apply` failed creating `aws_secretsmanager_secret.kalshi_agent_credentials` with `InvalidRequestException` when the secret name was scheduled for deletion. After `restore-secret`, a second `terraform apply` failed with `ResourceExistsException` because the secret existed in AWS but was not in Terraform state.
+
+### Resolution / Insight
+
+Cancel deletion first, then import the restored secret into Terraform state before re-applying. Without the import step, Terraform repeatedly tries to create a secret that already exists.
+
+### Commands / Code
+
+```bash
+aws secretsmanager restore-secret --region us-east-1 --secret-id kalshi-agent/credentials
+terraform -chdir="/Users/dansullivan/workspace/kalshi-agent/infra" import \
+  aws_secretsmanager_secret.kalshi_agent_credentials \
+  kalshi-agent/credentials
+terraform -chdir="/Users/dansullivan/workspace/kalshi-agent/infra" apply -auto-approve
+```
+
+---
+
 ## Argparse help strings treat `%` as interpolation placeholders
 **Date:** 2026-03-21
 **Context:** Python argparse CLI flags
@@ -542,5 +590,145 @@ import re, urllib.request
 html = urllib.request.urlopen("https://www.bls.gov/bls/news-release/cpi.htm").read().decode("utf-8", "replace")
 print(sorted(set(re.findall(r"/news.release/archives/cpi_\d+\.htm", html)))[:5])
 PY
+```
+
+---
+
+## AAA national average text may include header labels between `Regular` and the first price
+**Date:** 2026-03-21
+**Context:** kalshi-agent AAA gas parser
+**Tags:** aaa, gas, parser, regex, html, fixtures
+
+### Problem / Observation
+
+A parser regex that expected `Regular` immediately followed by a dollar price failed on synthetic and real AAA table layouts where grade headers (e.g., `Mid-Grade`, `Premium`) appear between `Regular` and the first numeric cell.
+
+### Resolution / Insight
+
+Use two-step extraction on normalized text: first match the `National average gas prices` section marker, then search for the first 3-decimal price within a bounded window after the marker. Keep a separate higher-priority pattern for `Today’s AAA National Average $X.XXX`.
+
+### Commands / Code
+
+```python
+text = normalize_html_to_text(html_text)
+
+primary = re.search(r"today(?:’|')s\s+aaa\s+national\s+average\s+\$?\s*(\d+\.\d{3})", text, re.I)
+if primary:
+    return float(primary.group(1))
+
+marker = re.search(r"national\s+average\s+gas\s+prices", text, re.I)
+if marker:
+    window = text[marker.end(): marker.end() + 1000]
+    first_price = re.search(r"\$?\s*(\d+\.\d{3})", window)
+    if first_price:
+        return float(first_price.group(1))
+```
+
+```bash
+curl -sSL "https://gasprices.aaa.com/" -o /tmp/aaa_live.html
+curl -sSL "https://web.archive.org/web/20250115000000/https://gasprices.aaa.com/" -o /tmp/aaa_wayback.html
+rg -n "Today.?s AAA National Average|National average gas prices|\$[0-9]+\.[0-9]{3}" /tmp/aaa_*.html
+```
+
+---
+
+## BLS CPI pages expose release time as an embargo line, not `For release ...`
+**Date:** 2026-03-22
+**Context:** kalshi-agent historical archive collection
+**Tags:** bls, cpi, html, timestamp, parsing
+
+### Problem / Observation
+
+Historical BLS CPI HTML fixtures did not include the expected `For release ...` sentence. Release time instead appeared as an embargo header line like `Transmission of material in this release is embargoed until 8:30 a.m. (ET) Tuesday, January 13, 2026`, causing timestamp extraction to fail.
+
+### Resolution / Insight
+
+Extract timestamp from the generic time/date pattern (`8:30 a.m. (ET) ... Month DD, YYYY`) regardless of leading phrase, then convert from `America/New_York` to UTC.
+
+### Commands / Code
+
+```python
+_BLS_RELEASE_PATTERN = re.compile(
+    r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*"
+    r"(?P<ampm>a\.m\.|p\.m\.)\s*\(ET\),?\s*"
+    r"(?:[A-Za-z]+,\s*)?"
+    r"(?P<month>[A-Za-z]+)\s+(?P<day>\d{1,2}),\s*(?P<year>\d{4})",
+    re.IGNORECASE,
+)
+
+local_dt = datetime(..., tzinfo=ZoneInfo("America/New_York"))
+release_utc = local_dt.astimezone(UTC)
+```
+
+```bash
+rg -n "Transmission of material in this release is embargoed|8:30 a\.m\. \(ET\)" tests/fixtures/bls_cpi_*.html
+```
+
+---
+
+## Release backtest replays should use `price_previous_dollars` for consensus
+**Date:** 2026-03-22
+**Context:** kalshi-agent data-release backtester
+**Tags:** kalshi, backtest, orderbook, consensus, replay, cpi, gas
+
+### Problem / Observation
+
+Historical candlestick snapshots often had `yes_bid_close_dollars=0.0` and `yes_ask_close_dollars=1.0` near settlement. Reconstructing an orderbook with both levels made implied probability collapse to ~0.50 (`yes/(yes+no)`), which created fake edges in replay.
+
+### Resolution / Insight
+
+For replay consensus, expose a single YES level from `price_previous_dollars` and leave NO empty. Keep bid/ask fields only for entry-fill simulation. This preserves historical market belief while still allowing realistic side-specific fill prices.
+
+### Commands / Code
+
+```python
+yes_probability = _first_non_none(
+    snapshot.get("price_previous_dollars"),
+    snapshot.get("yes_bid_close_dollars"),
+    snapshot.get("yes_ask_close_dollars"),
+)
+
+orderbook = {
+    "orderbook": {
+        "yes": [[yes_probability, 100]] if yes_probability is not None else [],
+        "no": [],
+    }
+}
+```
+
+```bash
+python3 -c "from kalshi_agent.backtest.release_backtest import run_default_release_backtests; import json; r=run_default_release_backtests(); print(json.dumps({'cpi': r['cpi']['metrics'], 'gas': r['gas']['metrics']}, indent=2))"
+```
+
+---
+
+## TradingLoopRunner mock mode logs `TRADE` unless `paper_trader` is attached
+**Date:** 2026-03-22
+**Context:** kalshi-agent gas paper runner + tests
+**Tags:** kalshi, trading-loop, mock-mode, paper-trading, tests, observability
+
+### Problem / Observation
+
+In `TradingLoopRunner._execute_signal`, mock mode alone does not guarantee `PAPER_TRADE` observability output. If `settings.kalshi_mock_mode=True` but `paper_trader` is `None`, the runner uses `kalshi.place_order(...)` and logs `action_taken="TRADE"` (still mock-safe, but different log semantics).
+
+### Resolution / Insight
+
+Attach `PaperTrader` whenever tests or runners expect paper-trade semantics/logging. For gas paper runner construction, always instantiate `PaperTrader` and force `KALSHI_MOCK_MODE=true`.
+
+### Commands / Code
+
+```python
+runner = TradingLoopRunner(
+    settings=Settings(kalshi_mock_mode=True),
+    kalshi=kalshi,
+    strategy=strategy,
+    risk_manager=risk_manager,
+    trade_store=TradeStore(db_path=db_path),
+    paper_trader=PaperTrader(starting_balance=1000.0),
+)
+```
+
+```bash
+python3 -m pytest tests/test_trading_loop.py -v --tb=short -k gas
 ```
 
