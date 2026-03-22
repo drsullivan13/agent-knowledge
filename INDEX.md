@@ -36,3 +36,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | `data/` gitignore pattern can hide new files under tracked `kalshi_agent/data/` | learnings/tools.md | git, gitignore, tracked-dirs, add-force, diagnostics | 2026-03-21 |
 | Backtest cache SQLite tables use `event_date` (not `date`) | learnings/tools.md | sqlite, backtest-cache, schema, diagnostics | 2026-03-21 |
 | Ignored `data/` paths can block staging modified tracked artifacts | learnings/tools.md | git, gitignore, tracked-files, data, add-force | 2026-03-21 |
+| BLS CPI release HTML keeps key metrics split across two `<pre>` blocks | learnings/gotchas.md | bls, cpi, html, parser, regex, fixtures | 2026-03-21 |

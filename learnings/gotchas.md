@@ -506,3 +506,41 @@ parser.add_argument(
 python3 -m kalshi_agent.backtest_probe --help
 ```
 
+---
+
+## BLS CPI release HTML keeps key metrics split across two `<pre>` blocks
+**Date:** 2026-03-21
+**Context:** kalshi-agent CPI parser implementation
+**Tags:** bls, cpi, html, parser, regex, fixtures
+
+### Problem / Observation
+
+The BLS CPI release page (`/news.release/cpi.nr0.htm`) has multiple `<pre>` blocks. The first block has the headline CPI-U/Core MoM and YoY percentages, but the CPI-U index level is in a later "Not seasonally adjusted CPI measures" block. Parsing only the first block misses the index level. Also, archive pages are easiest to source from `/bls/news-release/cpi.htm`, not `cpi.toc.htm`.
+
+### Resolution / Insight
+
+Extract all `<pre>` blocks, parse MoM/YoY from the first summary block, and parse CPI-U `index level of ...` from the combined pre text (or explicitly second block). Use archived fixtures from `/news.release/archives/cpi_<MMDDYYYY>.htm` for multi-month coverage.
+
+### Commands / Code
+
+```python
+pre_blocks = re.findall(r"<pre[^>]*>(.*?)</pre>", html_text, re.I | re.S)
+summary_text = normalize(pre_blocks[0])
+all_pre_text = " ".join(normalize(block) for block in pre_blocks)
+
+# summary metrics
+re.search(r"CPI-U\)\s+(?P<change>.+?)\s+on a seasonally adjusted basis", summary_text, re.I)
+
+# index level metric
+re.search(r"CPI-U\).*?index\s+level\s+of\s+(?P<value>[0-9]+(?:\.[0-9]+)?)", all_pre_text, re.I)
+```
+
+```bash
+# discover archive links and fetch fixtures
+python3 - <<'PY'
+import re, urllib.request
+html = urllib.request.urlopen("https://www.bls.gov/bls/news-release/cpi.htm").read().decode("utf-8", "replace")
+print(sorted(set(re.findall(r"/news.release/archives/cpi_\d+\.htm", html)))[:5])
+PY
+```
+
