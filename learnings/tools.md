@@ -286,3 +286,35 @@ ssh ... "docker exec kalshi-agent python - <<'PY'\nprint('hello')\nPY"
 # Correct: attach stdin for heredoc/script piping
 ssh ... "docker exec -i kalshi-agent python - <<'PY'\nprint('hello')\nPY"
 ```
+
+---
+
+## Flow-validator subagents can permission-abort unless prompts are narrowed to explicit read-only commands
+**Date:** 2026-03-22
+**Context:** Factory Task subagents, mission validation, local CLI testing
+**Tags:** factory, subagent, task, permissions, validation, prompts
+
+### Problem / Observation
+
+A `user-testing-flow-validator` subagent exited immediately with `Exec ended early: insufficient permission to proceed. Re-run with --skip-permissions-unsafe.` when given a broad local-validation prompt, even though the intended work was only bounded pytest runs and a one-cycle mock CLI smoke test.
+
+### Resolution / Insight
+
+Rewrite the Task prompt to tightly scope the validator to explicit read-only commands and constraints. Listing the allowed pytest commands, forbidding SSH/background processes/source edits, and limiting execution to bounded mock-mode CLI checks avoided the permission abort and let the validator complete normally.
+
+### Commands / Code
+
+```text
+Use only these kinds of commands:
+- python3 -m pytest tests/test_scheduler.py -v --tb=short
+- python3 -m pytest tests/test_trading_loop.py -v --tb=short -k gas
+- python3 -m pytest tests/test_monitoring.py -v --tb=short
+- optional bounded smoke command like env KALSHI_MOCK_MODE=true KALSHI_MAX_CYCLES=1 python3 -m kalshi_agent.gas_paper_runner if safe
+
+Constraints:
+- Do not modify any source files.
+- Do not SSH anywhere.
+- Do not start background processes.
+- Keep execution bounded and safe.
+- KALSHI_MOCK_MODE=true for any runner execution.
+```

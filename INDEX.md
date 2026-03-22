@@ -44,4 +44,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | BLS release schedule times must be converted from US/Eastern with DST awareness | learnings/gotchas.md | bls, scheduler, timezone, dst, utc, polling | 2026-03-22 |
 | Terraform apply can fail after restoring a Secrets Manager secret unless it is imported | learnings/gotchas.md | terraform, aws, secretsmanager, import, state, ec2, deployment | 2026-03-22 |
 | `docker exec` needs `-i` when piping heredoc scripts into container Python | learnings/tools.md | docker, exec, stdin, heredoc, ssh, ec2 | 2026-03-22 |
+| Flow-validator subagents can permission-abort unless prompts are narrowed to explicit read-only commands | learnings/tools.md | factory, subagent, task, permissions, validation, prompts | 2026-03-22 |
 | TradingLoopRunner mock mode logs `TRADE` unless `paper_trader` is attached | learnings/gotchas.md | kalshi, trading-loop, mock-mode, paper-trading, tests, observability | 2026-03-22 |
