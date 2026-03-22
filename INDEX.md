@@ -46,3 +46,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | `docker exec` needs `-i` when piping heredoc scripts into container Python | learnings/tools.md | docker, exec, stdin, heredoc, ssh, ec2 | 2026-03-22 |
 | Flow-validator subagents can permission-abort unless prompts are narrowed to explicit read-only commands | learnings/tools.md | factory, subagent, task, permissions, validation, prompts | 2026-03-22 |
 | TradingLoopRunner mock mode logs `TRADE` unless `paper_trader` is attached | learnings/gotchas.md | kalshi, trading-loop, mock-mode, paper-trading, tests, observability | 2026-03-22 |
+| Format Slack text separately from structured alert logs | learnings/patterns.md | slack, alerts, logging, json, webhook, monitoring | 2026-03-22 |

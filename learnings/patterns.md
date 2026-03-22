@@ -75,3 +75,34 @@ python3 -m kalshi_agent.backtest_probe \
   --disable-ncei-history \
   --cache-path data/historical_data_cache_probe.db
 ```
+
+---
+
+## Format Slack text separately from structured alert logs
+**Date:** 2026-03-22
+**Context:** kalshi-agent/python alerting and paper-trade monitoring
+**Tags:** slack, alerts, logging, json, webhook, monitoring
+
+### Problem / Observation
+
+Slack webhook messages were being sent as `{"text": json.dumps(payload)}`, which made Slack notifications hard to read. At the same time, the local/file alert logs were useful precisely because they stayed structured JSON.
+
+### Resolution / Insight
+
+Keep the webhook envelope the same (`{"text": ...}`), but format the inner Slack text as a concise multiline summary by alert type. Preserve the raw structured payload for file logging and return values. This improves Slack readability without breaking machine-readable local logs or webhook wiring.
+
+### Commands / Code
+
+```python
+def _dispatch(self, payload: dict[str, object]) -> dict[str, object]:
+    message = dict(payload)
+    self._post_webhook({"text": self._format_slack_text(message)})
+    self._log(message)
+    return message
+```
+
+```bash
+cd /Users/dansullivan/workspace/kalshi-agent
+python3 -m pytest tests/test_monitoring.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
