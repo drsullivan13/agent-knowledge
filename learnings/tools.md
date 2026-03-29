@@ -318,3 +318,32 @@ Constraints:
 - Keep execution bounded and safe.
 - KALSHI_MOCK_MODE=true for any runner execution.
 ```
+
+---
+
+## Docker CLI may fail until Docker Desktop is explicitly started in exec sessions
+**Date:** 2026-03-29
+**Context:** macOS Factory exec mode, Docker buildx, ECR rollout
+**Tags:** docker, docker-desktop, macos, buildx, ecr, deployment
+
+### Problem / Observation
+
+`docker buildx build --platform linux/amd64 ... --push` failed with `Cannot connect to the Docker daemon at unix:///Users/.../.docker/run/docker.sock` even though the Docker CLI binary was installed and `docker --version` succeeded.
+
+### Resolution / Insight
+
+In this environment, Docker Desktop was installed but not running. Starting Docker Desktop from CLI and waiting for `docker info` readiness restored daemon connectivity so buildx/push commands could run.
+
+### Commands / Code
+
+```bash
+open -a Docker
+for i in $(seq 1 60); do
+  docker info >/dev/null 2>&1 && echo "DOCKER_READY" && break
+  sleep 2
+done
+
+docker buildx build --platform linux/amd64 \
+  -t 319025930540.dkr.ecr.us-east-1.amazonaws.com/kalshi-agent:<tag> \
+  --push /path/to/repo
+```
