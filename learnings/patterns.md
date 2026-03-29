@@ -200,3 +200,114 @@ runner._log_observability(
 )
 PY'
 ```
+
+---
+
+## Wrap deployed AlertDispatcher with a recording proxy for real Slack validation
+**Date:** 2026-03-29
+**Context:** kalshi-agent/python deployed runtime-outcome validation
+**Tags:** kalshi, slack, alerts, ec2, validation, proxy, paper-trading
+
+### Problem / Observation
+
+For deployed gas runtime validation we needed to prove that the live EC2 container actually sent meaningful Slack paper outcomes, while also confirming heartbeat reasons stayed Slack-silent. Replacing only the dispatcher transport made it awkward to preserve the real webhook send path and still capture which `event_type` / `reason` / `release_key` went out.
+
+### Resolution / Insight
+
+Keep the real `AlertDispatcher` intact and wrap `runner.outcome_alert_dispatcher` with a small proxy object that only overrides `send_daily_summary()`. The proxy forwards to the real dispatcher, records sanitized summary metadata from the already-built summary payload, and lets the deployed container keep using its injected webhook. Pair this with `/tmp` overrides for `KALSHI_TRADES_DB_PATH` and `KALSHI_ALERT_LOG_PATH` so the probe stays paper-only and does not touch the live trades DB or alert log.
+
+### Commands / Code
+
+```python
+import os
+
+from kalshi_agent.strategies.base import Signal
+from kalshi_agent.trading_loop import build_gas_paper_runner
+
+runner = build_gas_paper_runner(env=dict(os.environ), print_fn=lambda _: None)
+
+class RecordingDispatcher:
+    def __init__(self, delegate):
+        self.delegate = delegate
+        self.events = []
+
+    def send_daily_summary(self, summary):
+        result = self.delegate.send_daily_summary(summary)
+        self.events.append(
+            {
+                "channel": result.get("channel"),
+                "sent": bool(result.get("sent")),
+                "event_type": summary.get("event_type"),
+                "reason": summary.get("reason"),
+                "release_key": summary.get("release_key"),
+            }
+        )
+        return result
+
+recording = RecordingDispatcher(runner.outcome_alert_dispatcher)
+runner.outcome_alert_dispatcher = recording
+
+runner._log_observability(
+    action_taken="PAPER_TRADE",
+    reason="manual_trade_probe",
+    cycle_id="manual-trade-probe",
+    signal=Signal(
+        event_ticker="KXAAAGASW-TEST",
+        market_ticker="KXAAAGASW-TEST-B350",
+        model_probability=0.05,
+        market_probability=0.65,
+        edge=0.60,
+        recommended_notional=5.0,
+        direction="BUY",
+        side="NO",
+        confidence=0.95,
+        reason="manual_trade_probe",
+        strategy_name="gas",
+    ),
+    observation={"parsed_values": {"aaa_regular_national_average": 3.47}},
+    release_key="gas:manual-trade-probe",
+    quantity=14,
+    price=0.65,
+    notional=5.0,
+    execution_status="paper_filled",
+)
+```
+
+```bash
+ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@3.82.212.36 \
+  'docker exec -i kalshi-agent env KALSHI_TRADES_DB_PATH=/tmp/runtime-probe.db KALSHI_ALERT_LOG_PATH=/tmp/runtime-probe-alerts.log python - <<"PY"
+import json
+import os
+
+from kalshi_agent.strategies.base import Signal
+from kalshi_agent.trading_loop import build_gas_paper_runner
+
+runner = build_gas_paper_runner(env=dict(os.environ), print_fn=lambda _: None)
+
+class RecordingDispatcher:
+    def __init__(self, delegate):
+        self.delegate = delegate
+        self.events = []
+
+    def send_daily_summary(self, summary):
+        result = self.delegate.send_daily_summary(summary)
+        self.events.append(
+            {
+                "channel": result.get("channel"),
+                "sent": bool(result.get("sent")),
+                "event_type": summary.get("event_type"),
+                "reason": summary.get("reason"),
+                "release_key": summary.get("release_key"),
+            }
+        )
+        return result
+
+recording = RecordingDispatcher(runner.outcome_alert_dispatcher)
+runner.outcome_alert_dispatcher = recording
+
+# emit meaningful PAPER_TRADE and SKIP, then heartbeat reasons
+...
+
+print(json.dumps({"alerts_logged": len(recording.events), "events": recording.events}, sort_keys=True))
+PY'
+```

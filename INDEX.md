@@ -52,5 +52,6 @@ Scan this file first to avoid duplicating existing knowledge.
 | Format Slack text separately from structured alert logs | learnings/patterns.md | slack, alerts, logging, json, webhook, monitoring | 2026-03-22 |
 | Keep profit projections machine-readable while rendering Slack-readable bullets | learnings/patterns.md | slack, alerts, profit-projection, observability, gas, paper-trading | 2026-03-22 |
 | Probe deployed gas profit reporting with `_log_observability` and a temporary DB path | learnings/patterns.md | kalshi, ec2, docker, paper-trading, observability, profit-projection | 2026-03-22 |
+| Wrap deployed AlertDispatcher with a recording proxy for real Slack validation | learnings/patterns.md | kalshi, slack, alerts, ec2, validation, proxy, paper-trading | 2026-03-29 |
 | Docker CLI may fail until Docker Desktop is explicitly started in exec sessions | learnings/tools.md | docker, docker-desktop, macos, buildx, ecr, deployment | 2026-03-29 |
 | Weekly gas idle loops use `gas_weekly_schedule` reason, not `scheduler_idle` | learnings/gotchas.md | gas, scheduler, slack, alerts, observability, skip-filter | 2026-03-29 |
