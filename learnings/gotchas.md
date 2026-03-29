@@ -858,3 +858,35 @@ ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-
 2026-03-23T13:00:30Z -> scheduler_idle for next week's gas release
 ```
 
+---
+
+## Manual EC2 container replacements can bypass Secrets Manager env injection
+**Date:** 2026-03-29
+**Context:** kalshi-agent EC2 gas runner rollout
+**Tags:** aws, ec2, docker, secretsmanager, slack, env, deployment
+
+### Problem / Observation
+
+The Terraform/user-data path correctly fetches `kalshi-agent/credentials` from AWS Secrets Manager and passes `SLACK_WEBHOOK_URL` into `docker run`, but later gas-only EC2 rollouts replaced the container manually with `docker run ... -e KALSHI_MOCK_MODE=true ... python -m kalshi_agent.gas_paper_runner`. That ad-hoc replacement preserved volumes and command overrides but skipped the secret-export step, so runtime env vars like `SLACK_WEBHOOK_URL` disappeared even though the secret still existed in AWS.
+
+### Resolution / Insight
+
+If a deployment was originally bootstrapped by EC2 `user_data`, do not assume later manual `docker run` replacements inherit the same env wiring. For follow-up rollouts, either (a) recreate the container through the same Secrets Manager fetch path before `docker run`, or (b) parameterize the infra/bootstrap so the desired command override still flows through the managed secret injection path.
+
+### Commands / Code
+
+```text
+Managed path:
+- infra/user_data.sh.tftpl fetches AWS Secrets Manager secret JSON
+- exports KALSHI_API_KEY_ID / KALSHI_PRIVATE_KEY / SLACK_WEBHOOK_URL / NCEI_TOKEN
+- runs docker with --env SLACK_WEBHOOK_URL
+
+Drifted manual path observed in rollout evidence:
+- docker rm -f kalshi-agent
+- docker run -d --name kalshi-agent --restart unless-stopped -e KALSHI_MOCK_MODE=true -v <data>:/app/data -v <secrets>:/app/.secrets <image> python -m kalshi_agent.gas_paper_runner
+
+Result:
+- gas-only runner command updated successfully
+- Secrets Manager-backed env vars were no longer guaranteed inside the container
+```
+
