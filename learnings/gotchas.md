@@ -890,3 +890,35 @@ Result:
 - Secrets Manager-backed env vars were no longer guaranteed inside the container
 ```
 
+---
+
+## Weekly gas idle loops use `gas_weekly_schedule` reason, not `scheduler_idle`
+**Date:** 2026-03-29
+**Context:** kalshi-agent gas runtime Slack outcome filtering
+**Tags:** gas, scheduler, slack, alerts, observability, skip-filter
+
+### Problem / Observation
+
+Runtime Slack suppression initially filtered only `reason="scheduler_idle"` and `reason="duplicate_release"`. In gas mode, `WeeklyGasScheduler.get_decision()` sets `reason="gas_weekly_schedule"` even when inactive, so idle heartbeat cycles still emitted `paper_skip` Slack messages every minute.
+
+### Resolution / Insight
+
+Treat scheduler-heartbeat skip reasons as a dedicated non-notifiable set (including `gas_weekly_schedule`, `scheduler_idle`, `duplicate_release`, and `schedule_unavailable`) in the runtime outcome notifier. Keep `_log_observability` unchanged so local structured logs still capture heartbeat/duplicate context. Also label mock-mode BUY NO executions as `PAPER_TRADE` so they flow through the same paper-trade Slack path as BUY YES.
+
+### Commands / Code
+
+```python
+_NON_NOTIFIABLE_RUNTIME_SKIP_REASONS = frozenset(
+    {"scheduler_idle", "gas_weekly_schedule", "duplicate_release", "schedule_unavailable"}
+)
+
+if action_taken == "SKIP" and reason in _NON_NOTIFIABLE_RUNTIME_SKIP_REASONS:
+    return
+
+action_taken = "PAPER_TRADE" if self.settings.kalshi_mock_mode else "TRADE"
+```
+
+```bash
+python3 -m pytest tests/test_trading_loop.py -v --tb=short -k slack
+```
+
