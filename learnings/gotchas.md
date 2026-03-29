@@ -830,3 +830,31 @@ print(transport.calls[0]["body"]["text"])
 python3 -m pytest tests/test_monitoring.py -v --tb=short -k profit_projection
 ```
 
+---
+
+## Fixed idle poll sleeps can overshoot short release activation windows
+**Date:** 2026-03-29
+**Context:** kalshi-agent gas paper runner on EC2
+**Tags:** scheduler, polling, gas, ec2, release-window, observability
+
+### Problem / Observation
+
+The gas paper runner was healthy on EC2 and logging once per minute while idle, but its last idle cycle before the Monday release happened at `2026-03-23T12:59:20Z`. The next cycle did not run until `2026-03-23T13:00:20Z`, even though the scheduler's pre-release activation offset is only 30 seconds for a `13:00:00Z` gas release.
+
+### Resolution / Insight
+
+`WeeklyGasScheduler.get_decision()` correctly reports `active=True` only inside `[release_time - 30s, release_time + 30s]`, but `TradingLoopRunner._sleep_until_next_cycle()` sleeps the full prior idle interval (60s). If the previous idle cycle lands before `active_start`, the loop can sleep straight past the intended pre-release activation boundary and only wake partway through the live window. When investigating missed release runs, compare the final idle timestamp to the scheduled release time; a one-minute idle cadence can consume most of a 60-second active window.
+
+### Commands / Code
+
+```bash
+ssh -i /Users/dansullivan/workspace/kalshi-agent/.secrets/ec2_key ec2-user@<ec2-ip> \
+  'docker logs --since 2026-03-23T12:59:00Z --until 2026-03-23T13:01:00Z kalshi-agent 2>&1 | egrep "2026-03-23T12:59:20|2026-03-23T13:00:20|2026-03-23T13:00:30"'
+```
+
+```text
+2026-03-23T12:59:20Z -> scheduler_idle, poll_interval_seconds=60.0
+2026-03-23T13:00:20Z -> scheduler_active=true, seconds_past_release=20.633
+2026-03-23T13:00:30Z -> scheduler_idle for next week's gas release
+```
+
