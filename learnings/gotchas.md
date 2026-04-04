@@ -1060,6 +1060,40 @@ python3 -m pytest tests/test_crypto_execution_model.py -v --tb=short
 python3 -m pytest tests/test_crypto_backtest_core.py -v --tb=short
 ```
 
+
+
+## Strategy research matched-window and holdout checks must preserve same family-window lineage
+**Date:** 2026-04-04
+**Context:** kalshi-agent crypto strategy research scrutiny
+**Tags:** crypto, strategy-research, scrutiny, matched-window, holdout, lineage, hedging
+
+### Problem / Observation
+
+Two scrutiny reviews found that the strategy-research layer can produce truthful-looking artifacts from invalid comparisons if lineage is not preserved explicitly. One bug labeled `hedged_unhedged_comparisons` as matched-window output while computing expectancy from independent hedged and unhedged trade subsets without intersecting on cycle/window identity first. Another bug built a holdout split by globally bisecting sorted `family_id::window` tokens, which let BTC rules be "confirmed" against ETH families instead of disjoint windows from the same rule population.
+
+### Resolution / Insight
+
+For hedged-vs-unhedged comparisons, intersect by the exact cycle/window key set first and only then compute matched expectancy deltas. For robustness, partition holdouts within the shortlisted rule's own lineage (same family or explicitly declared comparable population), not across unrelated families. Focused tests should assert both invariants directly, because field-presence checks and equal counts are not enough.
+
+### Commands / Code
+
+```python
+matched_keys = sorted(set(unhedged_by_key) & set(hedged_by_key))
+matched_unhedged = [unhedged_by_key[key] for key in matched_keys]
+matched_hedged = [hedged_by_key[key] for key in matched_keys]
+
+holdout_groups: dict[str, list[str]] = {}
+for partition_key in partition_keys:
+    family_id, window_start, window_end = partition_key.split("::", 2)
+    holdout_groups.setdefault(family_id, []).append(partition_key)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_strategy_research.py -v --tb=short
+python3 -m pytest tests/test_crypto_robustness_and_sizing.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
+
 ---
 
 ## Hedged exit semantics should key on outcome mode, not per-leg price parity
