@@ -955,3 +955,36 @@ python3 -m kalshi_agent.crypto_research.discovery --output-dir data/crypto_resea
 python3 -m pytest tests/ -v --tb=short
 ```
 
+
+
+## Keyword-only helper refactors can fail at runtime when old positional calls remain
+**Date:** 2026-04-04
+**Context:** Python backtest execution-model refactor
+**Tags:** python, keyword-only, refactor, runtime-error, backtest
+
+### Problem / Observation
+
+During a crypto backtest execution-model refactor, a helper was changed to keyword-only parameters (`def _spread_width_cents(*, quote_context, entry_side)`), but an existing call site still passed the first argument positionally. Tests failed at runtime with `TypeError: _spread_width_cents() takes 0 positional arguments but 1 positional argument (and 1 keyword-only argument) were given`.
+
+### Resolution / Insight
+
+When converting helper APIs to keyword-only signatures, update every call site to explicit keywords immediately and run focused tests before full-suite validation.
+
+### Commands / Code
+
+```python
+# Helper signature
+def _spread_width_cents(*, quote_context: dict[str, Any], entry_side: str) -> int:
+    ...
+
+# Correct call style
+entry_spread_cents = _spread_width_cents(
+    quote_context=fill_row.get('quote_context', {}),
+    entry_side=entry_side,
+)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_execution_model.py tests/test_crypto_backtest_core.py -v --tb=short
+```
+

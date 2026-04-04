@@ -64,3 +64,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Record run-level timing quality plus raw epoch-ms fields in external reference archives | learnings/patterns.md | crypto, collection, external-reference, timestamp, lineage, alignment | 2026-04-04 |
 | Expose canonical namespace helpers so strict path guards stay testable | learnings/patterns.md | python, pytest, monkeypatch, pathlib, namespace, crypto, collection | 2026-04-04 |
 | Default CLI output roots should be derived from canonical namespace helpers | learnings/patterns.md | python, argparse, pathlib, cwd, namespace, crypto, collection | 2026-04-04 |
+| Keyword-only helper refactors can fail at runtime when old positional calls remain | learnings/gotchas.md | python, keyword-only, refactor, runtime-error, backtest | 2026-04-04 |
