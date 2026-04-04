@@ -660,6 +660,49 @@ dispatcher.send_daily_summary({...})
 print(transport.calls[0]["body"]["text"])
 ```
 
+---
+
+## Crypto backtest scrutiny must validate window slicing, no-lookahead lags, and hedged aggregate fields
+**Date:** 2026-04-04
+**Context:** kalshi-agent crypto execution-aware backtest scrutiny
+**Tags:** crypto, backtest, scrutiny, family-window, lookahead, hedging, ledgers
+
+### Problem / Observation
+
+The execution-aware crypto backtest milestone passed its feature tests while still hiding four audit-grade bugs: same-family multi-window archives were evaluated by `family_id` only, `missed_exit` rows realized quoted exits that never filled, cycle ledgers could attach a future external-reference tick (negative `reference_alignment_lag_ms`), and hedged trade rows copied top-level fill/exit fields from the primary leg only.
+
+### Resolution / Insight
+
+Do not treat passing backtest tests as sufficient here. Validate/fix the engine against three invariants:
+1. archive rows must be filtered by both `family_id` **and** the current window bounds before replay;
+2. decision context must never use a future reference row (`reference_alignment_lag_ms` should stay non-negative or the slice must be downgraded/skipped);
+3. hedged trade-level aggregates must either sum across legs or be explicitly defined as leg-specific fields, and `missed_exit` must remain unexecuted/open (or use a declared settlement fallback) rather than realizing quoted PnL.
+
+### Commands / Code
+
+```bash
+python3 -m pytest tests/test_crypto_backtest_core.py tests/test_crypto_execution_model.py tests/test_crypto_hedge_accounting.py -v --tb=short
+```
+
+```python
+# Family-window replay must use window-scoped rows, not the whole family archive.
+window_rows = [
+    row for row in family_rows
+    if window_start_utc <= row_timestamp(row) < window_end_utc
+]
+
+# Decision context should never look ahead.
+assert cycle_row["reference_alignment_lag_ms"] is None or cycle_row["reference_alignment_lag_ms"] >= 0
+
+# Hedged trade aggregates should reconcile from leg rows.
+assert trade_row["contracts_filled"] == sum(leg["contracts_filled"] for leg in trade_row["legs"])
+
+# Missed exits should not realize quoted prices unless a declared fallback executed.
+if trade_row["exit_mode"] == "missed_exit":
+    assert trade_row["fill_basis"] == "none"
+    assert trade_row["net_pnl_usd"] in (None, 0.0)
+```
+
 ```bash
 python3 - <<'PY'
 from kalshi_agent.monitoring.alerts import AlertDispatcher

@@ -66,3 +66,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Default CLI output roots should be derived from canonical namespace helpers | learnings/patterns.md | python, argparse, pathlib, cwd, namespace, crypto, collection | 2026-04-04 |
 | Keyword-only helper refactors can fail at runtime when old positional calls remain | learnings/gotchas.md | python, keyword-only, refactor, runtime-error, backtest | 2026-04-04 |
 | Reconcile hedged backtest trades from explicit per-leg accounting | learnings/patterns.md | crypto, backtest, hedging, leg-accounting, reconciliation, pnl | 2026-04-04 |
+| Crypto backtest scrutiny must validate window slicing, no-lookahead lags, and hedged aggregate fields | learnings/gotchas.md | crypto, backtest, scrutiny, family-window, lookahead, hedging, ledgers | 2026-04-04 |
