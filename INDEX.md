@@ -70,3 +70,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Crypto backtest scrutiny must validate window slicing, no-lookahead lags, and hedged aggregate fields | learnings/gotchas.md | crypto, backtest, scrutiny, family-window, lookahead, hedging, ledgers | 2026-04-04 |
 | Lookahead-safe reference selection can silently zero out trades if fixture timing drifts ahead of decision snapshots | learnings/gotchas.md | crypto, backtest, lookahead, timestamps, fixtures, ledgers | 2026-04-04 |
 | Hedged exit semantics should key on outcome mode, not per-leg price parity | learnings/gotchas.md | crypto, backtest, hedging, summary-counters, exit-semantics, ledgers | 2026-04-04 |
+| Build strategy research by post-processing execution-aware backtest ledgers | learnings/patterns.md | crypto, strategy-research, backtest, ranking, regime-slices, hedging | 2026-04-04 |

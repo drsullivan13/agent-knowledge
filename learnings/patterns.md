@@ -502,3 +502,49 @@ python3 -m pytest tests/test_crypto_hedge_accounting.py -v --tb=short
 python3 -m pytest tests/test_crypto_execution_model.py tests/test_crypto_backtest_core.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Build strategy research by post-processing execution-aware backtest ledgers
+**Date:** 2026-04-04
+**Context:** kalshi-agent/python crypto strategy-evaluation suite
+**Tags:** crypto, strategy-research, backtest, ranking, regime-slices, hedging
+
+### Problem / Observation
+
+Strategy-research requirements (seed+adjacent family coverage, hedged-vs-unhedged comparisons on equivalent windows, parameter sweeps, executable expectancy ranking, regime segmentation) can sprawl if reimplemented directly in a second simulation path.
+
+### Resolution / Insight
+
+Treat `run_backtest(...)` as the single execution oracle. Feed it a strategy sweep config set, then build research artifacts by post-processing `cycle_ledger`/`trade_ledger`/`summary`: rank candidates by `net_expectancy_per_trade_usd` (mark zero-trade configs as non-executable), build hedged-vs-unhedged comparisons from non-hedge-equivalent parameter keys, and compute regime slices from cycle decision context plus external-reference rows.
+
+### Commands / Code
+
+```python
+backtest_outputs = run_backtest(
+    collection_run_manifest_path=collection_manifest,
+    fee_assumptions_path=fee_assumptions,
+    output_root=output_root,
+    strategy_configs=DEFAULT_STRATEGY_CONFIGS,
+)
+summary = _load_json(Path(backtest_outputs["artifacts"]["summary"]))
+cycle_rows = _load_json(Path(backtest_outputs["artifacts"]["cycle_ledger"]))["cycles"]
+trade_rows = _load_json(Path(backtest_outputs["artifacts"]["trade_ledger"]))["trades"]
+```
+
+```python
+ranked = sorted(
+    configuration_rows,
+    key=lambda row: (
+        row["non_executable"],
+        -row["net_expectancy_per_trade_usd"],
+        -row["executable_trade_count"],
+        row["configuration_id"],
+    ),
+)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_strategy_research.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
