@@ -435,3 +435,37 @@ def output_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 python3 -m pytest tests/test_crypto_storage.py tests/test_crypto_kalshi_collection.py tests/test_crypto_btc_reference_collection.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Default CLI output roots should be derived from canonical namespace helpers
+**Date:** 2026-04-04
+**Context:** kalshi-agent/python crypto collection CLI
+**Tags:** python, argparse, pathlib, cwd, namespace, crypto, collection
+
+### Problem / Observation
+
+With strict canonical namespace enforcement, using a relative CLI default like `--output-root data/crypto_research` can fail when the command is launched outside the repo root. `Path("data/crypto_research").resolve()` binds to the caller's current directory, not the repository.
+
+### Resolution / Insight
+
+Make `run_collection(output_root=...)` optional and default it to `_canonical_crypto_research_root()` when not provided. In argparse, set `--output-root` default to `None` and only wrap with `Path(...)` when explicitly supplied. This keeps explicit overrides supported while making default invocations cwd-independent and canonical.
+
+### Commands / Code
+
+```python
+def run_collection(*, output_root: Path | None = None, ...):
+    output_root = _canonical_crypto_research_root() if output_root is None else output_root.resolve()
+    _assert_crypto_research_namespace(output_root)
+```
+
+```python
+parser.add_argument("--output-root", default=None, help="... defaults to canonical repo-root path")
+artifacts = run_collection(output_root=Path(args.output_root) if args.output_root else None, ...)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_storage.py -v --tb=short
+tmpdir=$(mktemp -d) && cd "$tmpdir" && python3 -m kalshi_agent.crypto_research.collection
+python3 -m pytest tests/ -v --tb=short
+```
