@@ -922,3 +922,36 @@ action_taken = "PAPER_TRADE" if self.settings.kalshi_mock_mode else "TRADE"
 python3 -m pytest tests/test_trading_loop.py -v --tb=short -k slack
 ```
 
+---
+
+## Mixed-asset discovery cannot reuse a BTC-only reference manifest
+**Date:** 2026-04-04
+**Context:** kalshi-agent crypto market-discovery contracts
+**Tags:** crypto, discovery, manifests, reference-data, lineage, schemas
+
+### Problem / Observation
+
+Discovery accepted `eth-usd-15m` while publishing only BTC reference contracts/surfaces and mapping ETH families to BTC source IDs. This made settlement/reference lineage internally inconsistent and broke scrutiny.
+
+### Resolution / Insight
+
+When any non-BTC family is accepted, publish asset-specific reference profiles (candidate sources + primary/fallback + methodology) and map each accepted family to the profile for its own asset. Also make downstream run-manifest contracts multi-family aware (`families_evaluated`, `family_windows_evaluated`) instead of singular `family_id`.
+
+### Commands / Code
+
+```python
+profiles = source_manifest["reference_profiles"]
+for family in catalog["accepted_families"]:
+    profile = profiles[family["asset"]]
+    mapping = family["reference_methodology_mapping"]
+    assert mapping["asset"] == family["asset"]
+    assert mapping["primary_source_id"] == profile["selected_primary_source_id"]
+    assert mapping["fallback_source_id"] == profile["selected_fallback_source_id"]
+```
+
+```bash
+python3 -m pytest tests/test_crypto_discovery.py -v --tb=short
+python3 -m kalshi_agent.crypto_research.discovery --output-dir data/crypto_research/discovery-reference-consistency-check
+python3 -m pytest tests/ -v --tb=short
+```
+
