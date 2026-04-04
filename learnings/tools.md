@@ -347,3 +347,27 @@ docker buildx build --platform linux/amd64 \
   -t 319025930540.dkr.ecr.us-east-1.amazonaws.com/kalshi-agent:<tag> \
   --push /path/to/repo
 ```
+
+---
+
+## Use scoped stash for pre-existing `.factory/` mission changes before worker handoff
+**Date:** 2026-04-04
+**Context:** Factory worker missions in repos with preloaded `.factory/` edits
+**Tags:** git, stash, factory, mission, working-tree
+
+### Problem / Observation
+
+Worker sessions can begin with pre-existing modified/untracked files under `.factory/` before feature implementation starts. If you commit only feature files, `git status` remains dirty and violates clean-tree handoff requirements.
+
+### Resolution / Insight
+
+Commit only your feature files first, then stash pre-existing `.factory/` changes with a scoped pathspec so the working tree is clean without mixing unrelated mission scaffolding into the feature commit.
+
+### Commands / Code
+
+```bash
+git -C /path/to/repo add <feature-files...>
+git -C /path/to/repo commit -m "feat(...): ..."
+git -C /path/to/repo stash push -u -m "worker-preexisting-factory-state" -- .factory
+git -C /path/to/repo status --short
+```

@@ -55,3 +55,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Wrap deployed AlertDispatcher with a recording proxy for real Slack validation | learnings/patterns.md | kalshi, slack, alerts, ec2, validation, proxy, paper-trading | 2026-03-29 |
 | Docker CLI may fail until Docker Desktop is explicitly started in exec sessions | learnings/tools.md | docker, docker-desktop, macos, buildx, ecr, deployment | 2026-03-29 |
 | Weekly gas idle loops use `gas_weekly_schedule` reason, not `scheduler_idle` | learnings/gotchas.md | gas, scheduler, slack, alerts, observability, skip-filter | 2026-03-29 |
+| Use scoped stash for pre-existing `.factory/` mission changes before worker handoff | learnings/tools.md | git, stash, factory, mission, working-tree | 2026-04-04 |
