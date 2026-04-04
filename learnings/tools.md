@@ -403,3 +403,30 @@ git -C /path/to/repo show --stat --summary <handoff-commit>
 git -C /path/to/repo show --name-only <handoff-commit>
 git -C /path/to/repo log --oneline -n 5
 ```
+
+---
+
+## Scrutiny reruns should snapshot prior synthesis as `synthesis.roundN.json`
+**Date:** 2026-04-04
+**Context:** Factory missions, scrutiny validation reruns
+**Tags:** factory, scrutiny, validation, synthesis, rerun
+
+### Problem / Observation
+
+On a scrutiny rerun, the current milestone synthesis already lived at `.factory/validation/<milestone>/scrutiny/synthesis.json`. If you overwrite it directly, the new `previousRound` field points at a path that no longer contains the prior round, which breaks auditability for later reruns.
+
+### Resolution / Insight
+
+Before writing the new synthesis, copy the existing file to `.factory/validation/<milestone>/scrutiny/synthesis.round<N>.json` and then overwrite `synthesis.json` with the new round, setting `previousRound` to that archived path. This preserves an auditable chain across scrutiny reruns.
+
+### Commands / Code
+
+```bash
+# First rerun after an existing round 1 synthesis
+cp .factory/validation/data-collection/scrutiny/synthesis.json \
+  .factory/validation/data-collection/scrutiny/synthesis.round1.json
+
+# Then write the new round 2 synthesis with:
+# "round": 2
+# "previousRound": "/abs/path/to/.factory/validation/data-collection/scrutiny/synthesis.round1.json"
+```
