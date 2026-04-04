@@ -469,3 +469,36 @@ python3 -m pytest tests/test_crypto_storage.py -v --tb=short
 tmpdir=$(mktemp -d) && cd "$tmpdir" && python3 -m kalshi_agent.crypto_research.collection
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Reconcile hedged backtest trades from explicit per-leg accounting
+**Date:** 2026-04-04
+**Context:** kalshi-agent/python crypto execution-aware backtest
+**Tags:** crypto, backtest, hedging, leg-accounting, reconciliation, pnl
+
+### Problem / Observation
+
+Hedged variants were represented as a single aggregate trade row, which hid how each leg filled/exited and made it impossible to audit whether total PnL truthfully matched the leg-level economics.
+
+### Resolution / Insight
+
+Build each trade from a `legs` array (`primary` + optional `hedge`) where every leg stores side, entry/exit timestamps, prices, requested/filled/unfilled contracts, and full cost/PnL breakdown. Then compute trade-level gross/fees/spread/slippage/net as sums of leg values and emit an explicit reconciliation delta (`trade_net - sum(leg_net)`).
+
+### Commands / Code
+
+```python
+legs = [_evaluate_trade_leg(...primary...), _evaluate_trade_leg(...hedge...)]
+net_pnl_usd = round(sum(float(leg["net_pnl_usd"]) for leg in legs), 6)
+trade_row["legs"] = legs
+trade_row["leg_reconciliation_delta_usd"] = round(
+    net_pnl_usd - round(sum(float(leg["net_pnl_usd"]) for leg in legs), 6),
+    6,
+)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_hedge_accounting.py -v --tb=short
+python3 -m pytest tests/test_crypto_execution_model.py tests/test_crypto_backtest_core.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
