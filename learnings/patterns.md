@@ -353,3 +353,46 @@ python3 -m kalshi_agent.crypto_research.collection --output-root data/crypto_res
 python3 -m kalshi_agent.crypto_research.collection --output-root data/crypto_research
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Record run-level timing quality plus raw epoch-ms fields in external reference archives
+**Date:** 2026-04-04
+**Context:** kalshi-agent/python crypto external reference collection
+**Tags:** crypto, collection, external-reference, timestamp, lineage, alignment
+
+### Problem / Observation
+
+Per-row `timestamp_quality` alone was not enough to prove collection-time quality for a full run, and downstream validators needed raw timing fields to audit no-lookahead alignment deterministically.
+
+### Resolution / Insight
+
+Add top-level `source_provenance` and `timing_quality` sections to the external archive. In each row, persist both ISO and epoch-millisecond timestamps for source and collector times, plus explicit lag (`source_to_collector_lag_ms`). Use discovery-selected primary/fallback public/free source profiles to keep provenance family-appropriate and auditable.
+
+### Commands / Code
+
+```python
+{
+  "source_timestamp_utc": source_iso,
+  "source_timestamp_raw": source_iso,
+  "source_timestamp_unix_ms": int(source_time.timestamp() * 1000),
+  "collector_timestamp_utc": collector_iso,
+  "collector_timestamp_unix_ms": int(collector_time.timestamp() * 1000),
+  "source_to_collector_lag_ms": collector_ms - source_ms,
+}
+```
+
+```python
+timing_quality = {
+    "best_available_timestamp_precision": "millisecond",
+    "achieved_timestamp_precision": "millisecond",
+    "fractional_second_source_timestamp_row_count": source_fractional_count,
+    "fractional_second_collector_timestamp_row_count": collector_fractional_count,
+    "source_to_collector_lag_ms": {"min": ..., "p50": ..., "p95": ..., "max": ...},
+}
+```
+
+```bash
+python3 -m pytest tests/test_crypto_btc_reference_collection.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
