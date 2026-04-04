@@ -1059,3 +1059,43 @@ def _select_reference_row(*, decision_time_utc: str, reference_rows: list[dict[s
 python3 -m pytest tests/test_crypto_execution_model.py -v --tb=short
 python3 -m pytest tests/test_crypto_backtest_core.py -v --tb=short
 ```
+
+---
+
+## Hedged exit semantics should key on outcome mode, not per-leg price parity
+**Date:** 2026-04-04
+**Context:** Python crypto backtest hedge reporting
+**Tags:** crypto, backtest, hedging, summary-counters, exit-semantics, ledgers
+
+### Problem / Observation
+
+When adding top-level multi-leg exit semantics, a uniform hedged settlement (both legs `settlement` at the same time) was incorrectly labeled as mixed because the yes/no legs naturally had different `exit_price_cents`. This inflated `mixed_leg_outcomes` counts and made summary counters untruthful.
+
+### Resolution / Insight
+
+Classify leg outcomes as uniform using outcome semantics (`exit_mode`, `exit_reason`, `exit_fill_basis`, `exit_executed`, and aligned exit time), not raw per-leg price equality. For uniform outcomes with asset-side price differences, keep top-level `exit_semantics=uniform_leg_outcomes` and set top-level `exit_price_cents` to `None` when there is no single shared exit price.
+
+### Commands / Code
+
+```python
+uniform_outcome = (
+    len(exit_modes) == 1
+    and len(exit_reasons) == 1
+    and len(exit_fill_bases) == 1
+    and len(exit_executed_values) == 1
+    and len(unique_exit_times) <= 1
+)
+
+if uniform_outcome:
+    return {
+        "exit_semantics": "uniform_leg_outcomes",
+        "exit_mode": exit_modes[0],
+        "exit_price_cents": exit_prices[0] if len(exit_prices) == 1 else None,
+    }
+```
+
+```bash
+python3 -m pytest tests/test_crypto_hedge_accounting.py -v --tb=short
+python3 -m pytest tests/test_crypto_execution_model.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
