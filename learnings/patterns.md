@@ -311,3 +311,45 @@ runner.outcome_alert_dispatcher = recording
 print(json.dumps({"alerts_logged": len(recording.events), "events": recording.events}, sort_keys=True))
 PY'
 ```
+
+---
+
+## Use run-scoped dirs plus manifest hashes for append-safe research collection scaffolds
+**Date:** 2026-04-04
+**Context:** kalshi-agent/python crypto research collection foundations
+**Tags:** crypto, collection, manifests, lineage, reproducibility, data-isolation
+
+### Problem / Observation
+
+Crypto research collection foundations need to prove three things early: writes stay under `data/crypto_research/`, each run is append-safe (no silent overwrite), and downstream stages can verify exactly which raw artifacts a run used.
+
+### Resolution / Insight
+
+Use a strict namespace guard (`data/crypto_research` in the resolved output root), then write each run into a unique `collection_runs/<run_id>/` directory. Generate `run_manifest.json` that includes schema versions, source provenance contract, parameters, and per-artifact SHA256 hashes. Keep per-row lineage fields (`source_timestamp_utc`, `collector_timestamp_utc`, `source_observation_id`, `sequence_in_source`) in both Kalshi and external archives so no-lookahead alignment can be audited later.
+
+### Commands / Code
+
+```python
+run_dir = output_root / "collection_runs" / run_id
+run_dir.mkdir(parents=True, exist_ok=False)  # append-safe
+
+artifacts = [
+    {"artifact_id": "kalshi_archive", "path": str(kalshi_path), "sha256": sha256(kalshi_path.read_bytes())},
+    {"artifact_id": "external_reference_archive", "path": str(ext_path), "sha256": sha256(ext_path.read_bytes())},
+]
+
+run_manifest = {
+    "schema_version": "crypto-collection-run-manifest-v1",
+    "run_id": run_id,
+    "schema_versions": {...},
+    "source_set": source_set,
+    "artifacts": artifacts,
+}
+```
+
+```bash
+python3 -m pytest tests/test_crypto_storage.py -v --tb=short
+python3 -m kalshi_agent.crypto_research.collection --output-root data/crypto_research
+python3 -m kalshi_agent.crypto_research.collection --output-root data/crypto_research
+python3 -m pytest tests/ -v --tb=short
+```
