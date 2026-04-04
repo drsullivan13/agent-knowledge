@@ -1031,3 +1031,31 @@ entry_spread_cents = _spread_width_cents(
 python3 -m pytest tests/test_crypto_execution_model.py tests/test_crypto_backtest_core.py -v --tb=short
 ```
 
+
+
+## Lookahead-safe reference selection can silently zero out trades if fixture timing drifts ahead of decision snapshots
+**Date:** 2026-04-04
+**Context:** Python crypto backtest no-lookahead alignment
+**Tags:** crypto, backtest, lookahead, timestamps, fixtures, ledgers
+
+### Problem / Observation
+
+After tightening reference-row selection to disallow future ticks (`source_timestamp_unix_ms > decision_time`), default fixture data started skipping all BTC cycles because external reference rows were 125ms later than Kalshi decision snapshots. This made unrelated execution tests fail even though the no-lookahead logic was correct.
+
+### Resolution / Insight
+
+Keep fixture timestamps aligned so at least one external reference tick exists at or before each decision snapshot in the active window. Preserve a dedicated regression test that forces future-only reference rows and expects `reference_lookahead_blocked` skips with no negative `reference_alignment_lag_ms`.
+
+### Commands / Code
+
+```python
+def _select_reference_row(*, decision_time_utc: str, reference_rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    decision_ms = int(datetime.fromisoformat(decision_time_utc).timestamp() * 1000)
+    rows_at_or_before = [row for row in reference_rows if int(row["source_timestamp_unix_ms"]) <= decision_ms]
+    return sorted(rows_at_or_before, key=lambda row: int(row["source_timestamp_unix_ms"]))[-1] if rows_at_or_before else None
+```
+
+```bash
+python3 -m pytest tests/test_crypto_execution_model.py -v --tb=short
+python3 -m pytest tests/test_crypto_backtest_core.py -v --tb=short
+```
