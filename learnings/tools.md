@@ -371,3 +371,35 @@ git -C /path/to/repo commit -m "feat(...): ..."
 git -C /path/to/repo stash push -u -m "worker-preexisting-factory-state" -- .factory
 git -C /path/to/repo status --short
 ```
+
+---
+
+## Scrutiny can fail when `EndFeatureRun.commitId` points at a later cleanup commit
+**Date:** 2026-04-04
+**Context:** Factory missions, scrutiny validation, git handoffs
+**Tags:** factory, scrutiny, handoff, commit, git, validation
+
+### Problem / Observation
+
+A worker handoff claimed a feature added `kalshi_agent/crypto_research/discovery.py` and `tests/test_crypto_discovery.py`, but the recorded `commitId` in the handoff JSON pointed to a later `.factory/` scaffolding commit instead of the feature diff. Reviewers could not reproduce the claimed verification from the handed-off SHA because `git show --stat <commitId>` contained none of the implementation files.
+
+### Resolution / Insight
+
+During scrutiny, always compare the handoff's `commitId` against the claimed files/tests before trusting the verification narrative. If the SHA only contains cleanup/scaffolding, inspect nearby commits and fail the feature as non-auditable. During feature implementation, keep `EndFeatureRun.commitId` anchored to the commit that actually contains the feature files and tests; do not point it at a later unrelated cleanup commit.
+
+### Commands / Code
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+handoff = Path("/path/to/handoff.json")
+data = json.loads(handoff.read_text())
+print(data["commitId"])
+print(data["handoff"]["whatWasImplemented"])
+PY
+
+git -C /path/to/repo show --stat --summary <handoff-commit>
+git -C /path/to/repo show --name-only <handoff-commit>
+git -C /path/to/repo log --oneline -n 5
+```

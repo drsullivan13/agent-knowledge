@@ -56,3 +56,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Docker CLI may fail until Docker Desktop is explicitly started in exec sessions | learnings/tools.md | docker, docker-desktop, macos, buildx, ecr, deployment | 2026-03-29 |
 | Weekly gas idle loops use `gas_weekly_schedule` reason, not `scheduler_idle` | learnings/gotchas.md | gas, scheduler, slack, alerts, observability, skip-filter | 2026-03-29 |
 | Use scoped stash for pre-existing `.factory/` mission changes before worker handoff | learnings/tools.md | git, stash, factory, mission, working-tree | 2026-04-04 |
+| Scrutiny can fail when `EndFeatureRun.commitId` points at a later cleanup commit | learnings/tools.md | factory, scrutiny, handoff, commit, git, validation | 2026-04-04 |
