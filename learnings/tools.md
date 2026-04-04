@@ -430,3 +430,29 @@ cp .factory/validation/data-collection/scrutiny/synthesis.json \
 # "round": 2
 # "previousRound": "/abs/path/to/.factory/validation/data-collection/scrutiny/synthesis.round1.json"
 ```
+
+---
+
+## Scrutiny reruns can overwrite prior review JSON in place
+**Date:** 2026-04-04
+**Context:** Factory missions, scrutiny validation reruns
+**Tags:** factory, scrutiny, validation, review, rerun, auditability
+
+### Problem / Observation
+
+Even after preserving `synthesis.roundN.json`, a scrutiny rerun can still lose audit history because the reviewer is often told to read the existing `.factory/validation/<milestone>/scrutiny/reviews/<feature>.json` file and then write the new report back to that exact same path. The prior review content disappears as soon as the rerun overwrites it, so `addressesFailureFrom` can end up pointing at a path that no longer contains the previous review.
+
+### Resolution / Insight
+
+Before overwriting a rerun review, archive the previous review JSON to a round-specific filename (for example `reviews/<feature>.round2.json`) and have the new review point `addressesFailureFrom` at that archived file. If the skill is not yet automated, at least record the limitation in synthesis so the orchestrator can update the scrutiny procedure.
+
+### Commands / Code
+
+```bash
+git -C /Users/dansullivan/workspace/kalshi-agent show \
+  HEAD:.factory/validation/data-collection/scrutiny/reviews/crypto-research-storage-window-and-namespace-fix.json \
+  > /Users/dansullivan/workspace/kalshi-agent/.factory/validation/data-collection/scrutiny/reviews/crypto-research-storage-window-and-namespace-fix.round2.json
+
+# Then update the rerun review JSON to reference the archived path:
+# "addressesFailureFrom": "/abs/path/to/.../reviews/crypto-research-storage-window-and-namespace-fix.round2.json"
+```
