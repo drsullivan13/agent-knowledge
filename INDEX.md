@@ -59,6 +59,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Scrutiny can fail when `EndFeatureRun.commitId` points at a later cleanup commit | learnings/tools.md | factory, scrutiny, handoff, commit, git, validation | 2026-04-04 |
 | Scrutiny reruns should snapshot prior synthesis as `synthesis.roundN.json` | learnings/tools.md | factory, scrutiny, validation, synthesis, rerun | 2026-04-04 |
 | Scrutiny reruns can overwrite prior review JSON in place | learnings/tools.md | factory, scrutiny, validation, review, rerun, auditability | 2026-04-04 |
+| Crypto backtest hedge validation can use a `python3` inline wrapper when the module CLI lacks strategy-config args | learnings/tools.md | kalshi, crypto, backtest, cli, validation, hedging, user-testing | 2026-04-04 |
 | Mixed-asset discovery cannot reuse a BTC-only reference manifest | learnings/gotchas.md | crypto, discovery, manifests, reference-data, lineage, schemas | 2026-04-04 |
 | Use run-scoped dirs plus manifest hashes for append-safe research collection scaffolds | learnings/patterns.md | crypto, collection, manifests, lineage, reproducibility, data-isolation | 2026-04-04 |
 | Record run-level timing quality plus raw epoch-ms fields in external reference archives | learnings/patterns.md | crypto, collection, external-reference, timestamp, lineage, alignment | 2026-04-04 |

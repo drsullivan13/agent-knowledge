@@ -350,6 +350,52 @@ docker buildx build --platform linux/amd64 \
 
 ---
 
+## Crypto backtest hedge validation can use a `python3` inline wrapper when the module CLI lacks strategy-config args
+**Date:** 2026-04-04
+**Context:** kalshi-agent crypto backtest user testing
+**Tags:** kalshi, crypto, backtest, cli, validation, hedging, user-testing
+
+### Problem / Observation
+
+`python3 -m kalshi_agent.crypto_research.backtest` only exposes `--collection-run-manifest`, `--fee-assumptions-path`, and `--output-root`. During user-testing validation we needed to run hedged and mixed-leg hedge scenarios, but the CLI had no flag for passing custom `strategy_configs`.
+
+### Resolution / Insight
+
+Stay on the CLI/artifact surface by using `python3 - <<'PY'` to call `run_backtest(...)` directly with custom `strategy_configs`. If you need a forced mixed-leg hedge case, copy the collection run directory inside the allowed output root, mutate only that copied archive, rewrite the copied `run_manifest.json` artifact paths, and point `run_backtest(...)` at the copied manifest.
+
+### Commands / Code
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+from kalshi_agent.crypto_research.backtest import run_backtest
+
+outputs = run_backtest(
+    collection_run_manifest_path=Path("data/crypto_research/.../collection_runs/<run>/run_manifest.json"),
+    fee_assumptions_path=Path("data/crypto_research/.../discovery/fee_assumptions.json"),
+    output_root=Path("data/crypto_research/..."),
+    strategy_configs=[{
+        "configuration_id": "hedged-seed-entry-lte-49",
+        "description": "Seed variant with a smaller opposite-side hedge leg.",
+        "rule_parameters": {
+            "entry_side": "yes",
+            "entry_price_lte_cents": 49,
+            "hold_minutes": 0,
+            "exit_cutoff_minutes_before_close": 1,
+            "contracts": 10,
+            "hedge_mode": "opposite_side",
+            "hedge_ratio": 0.4,
+            "allow_settlement_fallback": False,
+        },
+    }],
+)
+print(json.dumps(outputs, indent=2, sort_keys=True))
+PY
+```
+
+---
+
 ## Use scoped stash for pre-existing `.factory/` mission changes before worker handoff
 **Date:** 2026-04-04
 **Context:** Factory worker missions in repos with preloaded `.factory/` edits
