@@ -396,3 +396,42 @@ timing_quality = {
 python3 -m pytest tests/test_crypto_btc_reference_collection.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Expose canonical namespace helpers so strict path guards stay testable
+**Date:** 2026-04-04
+**Context:** kalshi-agent/python crypto collection namespace enforcement
+**Tags:** python, pytest, monkeypatch, pathlib, namespace, crypto, collection
+
+### Problem / Observation
+
+Tightening `output_root` validation to an exact repo canonical path (`<repo>/data/crypto_research`) broke collection tests that intentionally write to `tmp_path/data/crypto_research`. The old segment-matching guard allowed those tests implicitly, but canonical anchoring correctly rejected them.
+
+### Resolution / Insight
+
+Move canonical-root derivation into a dedicated helper (`_canonical_crypto_research_root()`) and keep namespace checking based on `path.relative_to(canonical_root)`. In tests, monkeypatch that helper to a temporary canonical root fixture so production logic stays strict while fixture-backed tests remain isolated and fast.
+
+### Commands / Code
+
+```python
+def _canonical_crypto_research_root() -> Path:
+    return (Path(__file__).resolve().parents[2] / "data" / "crypto_research").resolve()
+
+def _assert_crypto_research_namespace(path: Path) -> None:
+    canonical_root = _canonical_crypto_research_root()
+    path.relative_to(canonical_root)  # raises ValueError if outside
+```
+
+```python
+@pytest.fixture
+def output_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    canonical_output_root = (tmp_path / "data" / "crypto_research").resolve()
+    monkeypatch.setattr(collection_module, "_canonical_crypto_research_root", lambda: canonical_output_root)
+    return canonical_output_root
+```
+
+```bash
+python3 -m pytest tests/test_crypto_storage.py tests/test_crypto_kalshi_collection.py tests/test_crypto_btc_reference_collection.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
