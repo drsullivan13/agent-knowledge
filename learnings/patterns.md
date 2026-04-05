@@ -752,3 +752,43 @@ python3 -m pytest tests/test_crypto_final_bundle.py -v --tb=short
 python3 -m pytest tests/test_crypto_decision_report.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+## Bootstrap structural collection contracts from discovery snapshots when shared artifacts are missing
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing collection lineage
+**Tags:** structural-mispricing, collection, manifests, discovery-contract, reconciliation, append-safe
+
+### Problem / Observation
+
+The structural-mispricing collection feature needed to run from CLI verification commands even when `data/structural_mispricing/discovery/` did not already contain checked-in `surface_contract.json` and related artifacts. Collection also had to preserve append-safe run directories and publish explicit accepted/rejected/blocked/missing statuses for every requested family/surface row.
+
+### Resolution / Insight
+
+Use a two-mode discovery-contract resolver: consume existing discovery artifacts if present, otherwise materialize a run-scoped discovery snapshot under `collection_runs/<run_id>/discovery_snapshot/` from the archived scan capture. Then reconcile every `family_surface_contract_rows × requested_surfaces` combination into explicit statuses (`accepted`, `rejected`, `blocked`, `missing`) and include reconciliation counts plus artifact hashes in `run_manifest.json`.
+
+### Commands / Code
+
+```python
+def _resolve_discovery_contract(...):
+    if all(path.exists() for path in required_paths.values()):
+        return {"materialization_mode": "existing_discovery_contract", ...}
+    outputs = run_discovery(
+        output_root=run_dir / "discovery_snapshot",
+        scan_capture_path=(_repo_root() / DEFAULT_SCAN_CAPTURE_PATH).resolve(),
+    )
+    return {"materialization_mode": "run_scoped_snapshot", ...outputs}
+```
+
+```python
+expected_rows = len(family_surface_rows) * len(requested_surfaces)
+summary = {
+    "status_counts": {"accepted": a, "rejected": r, "blocked": b, "missing": m},
+    "reconciles_to_discovery_contract": len(rows) == expected_rows,
+}
+```
+
+```bash
+python3 -m pytest tests/test_structural_mispricing_collection.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.collection --output-root data/structural_mispricing --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-02T00:00:00+00:00
+python3 -m pytest tests/ -v --tb=short
+```

@@ -86,3 +86,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Structural mispricing discovery can satisfy schema tests while staying fully static | learnings/gotchas.md | structural-mispricing, discovery, scrutiny, auditability, lineage, fixtures | 2026-04-05 |
 | Force-add ignored `data/` discovery scan captures used as runtime inputs | learnings/tools.md | git, gitignore, data, structural-mispricing, discovery, scan-capture | 2026-04-05 |
 | BLS and Congress HTML pages may be blocked while API or alternate official endpoints remain reachable | learnings/gotchas.md | structural-mispricing, discovery, source-manifest, reachability, bls, congress, curl | 2026-04-05 |
+| Bootstrap structural collection contracts from discovery snapshots when shared artifacts are missing | learnings/patterns.md | structural-mispricing, collection, manifests, discovery-contract, reconciliation, append-safe | 2026-04-05 |
