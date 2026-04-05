@@ -675,3 +675,45 @@ python3 -m pytest tests/test_crypto_decision_report.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 python3 -m py_compile kalshi_agent/crypto_research/decision_report.py
 ```
+
+---
+
+## Fail-closed reference quality should be reason-driven across backtest→bundle→report
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python crypto decision-gate fail-closed lineage
+**Tags:** crypto, decision-gate, fail-closed, reference-quality, lineage, backtest, report
+
+### Problem / Observation
+
+A rejected family-window (`eth-usd-5m`) carried `reference_quality_status="healthy"` downstream because status logic keyed mainly on `eligibility_reason` instead of the full reason set, and cycle rows dropped window-level reasons. This made final bundle/report look healthy despite missing discovery lineage and missing reference coverage.
+
+### Resolution / Insight
+
+Treat reference quality as **reason-driven** and propagate reasons from family-window consideration into cycle rows. Keep a shared blocking-reason set (`missing_external_reference`, `missing_discovery_family_lineage`, `coarse_timestamp`, etc.). Derive status from reasons first (`blocked` > `downgraded` > default), then carry those fields through final bundle dropped rows and decision-report alignment assessment.
+
+### Commands / Code
+
+```python
+BLOCKING_REFERENCE_QUALITY_REASONS = {
+    "coarse_timestamp",
+    "stale_reference",
+    "missing_external_reference",
+    "reference_lookahead_blocked",
+    "missing_discovery_family_lineage",
+}
+
+def _reference_quality_status_from_reasons(*, reasons: list[str], default_status: str) -> str:
+    normalized = {str(reason) for reason in reasons if str(reason)}
+    if any(reason in BLOCKING_REFERENCE_QUALITY_REASONS for reason in normalized):
+        return "blocked"
+    if "source_switch" in normalized:
+        return "downgraded"
+    return default_status if default_status in {"blocked", "downgraded", "healthy"} else "healthy"
+```
+
+```bash
+python3 -m pytest tests/test_crypto_pipeline_lineage.py -v --tb=short
+python3 -m pytest tests/test_crypto_final_bundle.py -v --tb=short
+python3 -m pytest tests/test_crypto_decision_report.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```

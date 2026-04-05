@@ -79,3 +79,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Surface reference-quality guardrails from backtest into strategy summaries | learnings/patterns.md | crypto, backtest, strategy-research, lineage, guardrails, timing-alignment | 2026-04-05 |
 | Build final decision input bundles by reconciling family-window lineage across discovery→archive→backtest→strategy | learnings/patterns.md | crypto, strategy-research, final-bundle, lineage, family-window, provenance | 2026-04-05 |
 | Derive a deterministic crypto GO/HOLD decision report from strategy lineage artifacts | learnings/patterns.md | crypto, decision-report, lineage, reproducibility, hold-go, validation | 2026-04-05 |
+| Fail-closed reference quality should be reason-driven across backtest→bundle→report | learnings/patterns.md | crypto, decision-gate, fail-closed, reference-quality, lineage, backtest, report | 2026-04-05 |
