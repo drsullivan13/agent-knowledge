@@ -502,3 +502,49 @@ git -C /Users/dansullivan/workspace/kalshi-agent show \
 # Then update the rerun review JSON to reference the archived path:
 # "addressesFailureFrom": "/abs/path/to/.../reviews/crypto-research-storage-window-and-namespace-fix.round2.json"
 ```
+
+---
+
+## If a `scrutiny-feature-reviewer` Task never writes its report, recover from the mission handoff
+**Date:** 2026-04-05
+**Context:** Factory missions, scrutiny validation, Task subagents
+**Tags:** factory, scrutiny, task, subagent, review, handoff, fallback
+
+### Problem / Observation
+
+During `decision-gate` scrutiny, one `scrutiny-feature-reviewer` Task returned only internal reasoning text and never created the requested review JSON under `.factory/validation/<milestone>/scrutiny/reviews/`, even after a tighter retry prompt. That left the milestone missing one required review artifact even though the feature handoff and worker transcript were present in the mission directory.
+
+### Resolution / Insight
+
+If a reviewer Task silently fails to emit its report file, first confirm the file is still missing. Then recover the feature context directly from the mission handoff and worker transcript: extract the worker session's handoff JSON to get the authoritative `commitId`, claimed validation, and feature scope, inspect the relevant commit diff, and write the review JSON manually using the existing scrutiny review schema. This preserves synthesis progress while still recording that the review subagent was spawned.
+
+### Commands / Code
+
+```bash
+# 1) Confirm the requested review file was not created
+ls .factory/validation/decision-gate/scrutiny/reviews
+
+# 2) Find the feature handoff / transcript by worker session or feature id
+rg -n "3e02b010-125a-4e8b-af67-28e84b7f9b00|crypto-end-to-end-lineage-and-guardrails" \
+  /Users/dansullivan/.factory/missions/3ad7418a-7c60-4763-8e01-da5b9053b15e
+
+# 3) Inspect the handoff to recover the commit and claimed verification
+python3 - <<'PY'
+import json
+from pathlib import Path
+handoff = Path("/Users/dansullivan/.factory/missions/3ad7418a-7c60-4763-8e01-da5b9053b15e/handoffs/2026-04-05T00-30-47-728Z__crypto-end-to-end-lineage-and-guardrails__3e02b010-125a-4e8b-af67-28e84b7f9b00.json")
+data = json.loads(handoff.read_text())
+print(data["commitId"])
+print(data["handoff"]["salientSummary"])
+PY
+
+# 4) Review the actual diff before writing the fallback JSON
+git -C /Users/dansullivan/workspace/kalshi-agent show --stat bc597621c84a6f02ded6ae216bd5306281e0ae7b
+git -C /Users/dansullivan/workspace/kalshi-agent show bc597621c84a6f02ded6ae216bd5306281e0ae7b -- \
+  kalshi_agent/crypto_research/backtest.py \
+  kalshi_agent/crypto_research/strategy_research.py \
+  tests/test_crypto_pipeline_lineage.py
+
+# 5) Then write .factory/validation/<milestone>/scrutiny/reviews/<feature>.json manually
+# using the same schema as neighboring scrutiny review files.
+```
