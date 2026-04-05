@@ -649,3 +649,36 @@ git -C /Users/dansullivan/workspace/kalshi-agent check-ignore -v \
 git -C /Users/dansullivan/workspace/kalshi-agent add -f \
   data/structural_mispricing/discovery/scan_captures/public_kalshi_discovery_scan.json
 ```
+
+---
+
+## Scrutiny reviewer subagents may need explicit allowed files and commands to avoid permission aborts
+**Date:** 2026-04-05
+**Context:** Factory scrutiny validation, Task subagents
+**Tags:** factory, scrutiny, task, subagent, permissions, prompts
+
+### Problem / Observation
+
+A `scrutiny-feature-reviewer` Task for a rerun fix exited immediately with `Exec ended early: insufficient permission to proceed. Re-run with --skip-permissions-unsafe.` when the prompt broadly asked it to review the feature, inspect prior failures, and write a JSON report.
+
+### Resolution / Insight
+
+Retry with a tightly scoped prompt that enumerates the exact files it may read, the exact read-only `git show` commands it may run, and the single review JSON path it may create. Narrowing the prompt to those concrete inputs/outputs let the reviewer complete and emit the report without needing unsafe permissions.
+
+### Commands / Code
+
+```text
+Allowed scope only:
+- Read these files:
+  - /Users/dansullivan/.factory/missions/.../handoffs/...__structural-mispricing-discovery-auditability-fix__....json
+  - /Users/dansullivan/workspace/kalshi-agent/.factory/validation/universe-discovery/scrutiny/synthesis.json
+  - /Users/dansullivan/workspace/kalshi-agent/.factory/validation/universe-discovery/scrutiny/reviews/structural-mispricing-universe-scan-and-taxonomy.json
+  - /Users/dansullivan/workspace/kalshi-agent/.factory/validation/universe-discovery/scrutiny/reviews/structural-mispricing-discovery-lineage-and-screen-eligibility.json
+- Run only these git read-only commands:
+  - git -C /Users/dansullivan/workspace/kalshi-agent show --stat 611df980cfe72533692953e36631091bdf7cf956
+  - git -C /Users/dansullivan/workspace/kalshi-agent show 611df980cfe72533692953e36631091bdf7cf956 -- kalshi_agent/structural_mispricing/discovery.py tests/test_structural_mispricing_discovery.py data/structural_mispricing/discovery/scan_captures/public_kalshi_discovery_scan.json
+  - git -C /Users/dansullivan/workspace/kalshi-agent show --stat 392e67c
+  - git -C /Users/dansullivan/workspace/kalshi-agent show --stat 13828969463e073a03a734ad7d970a747f530141
+- Create exactly one file:
+  - /Users/dansullivan/workspace/kalshi-agent/.factory/validation/universe-discovery/scrutiny/reviews/structural-mispricing-discovery-auditability-fix.json
+```
