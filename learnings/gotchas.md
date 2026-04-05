@@ -1215,3 +1215,31 @@ for row in robustness["shortlisted_robustness_checks"]:
     assert row["confirmation_partition_keys"] == []
     assert "confirmation_partition_non_executable" in row["robustness_blocking_reasons"]
 ```
+
+---
+
+## Structural mispricing discovery can satisfy schema tests while staying fully static
+**Date:** 2026-04-05
+**Context:** kalshi-agent structural mispricing scrutiny
+**Tags:** structural-mispricing, discovery, scrutiny, auditability, lineage, fixtures
+
+### Problem / Observation
+
+The current `kalshi_agent.structural_mispricing.discovery` flow can look contract-complete while never performing a real universe scan. `run_discovery()` deep-copies module-level `FAMILY_ROWS` and only stamps timestamps/lookback metadata onto `SCAN_BASIS_TEMPLATE`, so the emitted universe artifacts are seeded catalogs rather than outputs derived from Kalshi discovery surfaces or archived scan inputs. The same module also stamps identical `sample_fetch_metadata` (`reachable`, HTTP 200, `text/html`) onto every source manifest row without performing a fetch, even for PDF URLs. Shape/count-based tests still pass, so this can slip through unless scrutiny checks auditability.
+
+### Resolution / Insight
+
+When reviewing or extending structural-mispricing discovery, verify that the pipeline actually consumes public Kalshi discovery input (or archived captures) instead of only seeded constants. Also verify that every authoritative `source_id` referenced by accepted family lineage exists in `source_manifest.json`, and that reachability metadata comes from observed fetch results or is explicitly marked unavailable/unknown. Add tests that assert discovery provenance is input-backed rather than merely schema-valid.
+
+### Commands / Code
+
+```bash
+python3 - <<'PY2'
+from pathlib import Path
+text = Path('kalshi_agent/structural_mispricing/discovery.py').read_text()
+print('deep-copies seeded families:', 'all_families = _build_families' in text and 'for template in FAMILY_ROWS' in text)
+print('hard-coded sample fetch metadata:', 'sample_fetch_metadata' in text and '"fetch_status": "reachable"' in text)
+PY2
+
+python3 -m pytest tests/test_structural_mispricing_discovery.py -v --tb=short
+```
