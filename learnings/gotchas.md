@@ -1133,3 +1133,42 @@ python3 -m pytest tests/test_crypto_hedge_accounting.py -v --tb=short
 python3 -m pytest tests/test_crypto_execution_model.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Robustness holdouts must be scoped per-configuration lineage and surfaced in artifacts
+**Date:** 2026-04-05
+**Context:** kalshi-agent crypto strategy robustness sizing
+**Tags:** crypto, strategy-research, robustness, holdout, lineage, artifacts
+
+### Problem / Observation
+
+Global holdout partitioning over mixed `family_id::window` tokens can still report a "passed" confirmation for a shortlisted BTC rule using ETH windows if the split boundary lands across families. This breaks out-of-sample validity and is easy to miss if only disjointness is checked.
+
+### Resolution / Insight
+
+Build holdout partitions per configuration after selecting a comparable lineage basis (family scope). For BTC-seed configs, prefer executable `btc-usd-15m` rows when available; otherwise fall back to the most executable family. Scope both cycles and trades to that lineage before partitioning and emit the selected `lineage_basis` plus per-configuration partitions in `robustness_and_sizing.json`. Add regression tests asserting shortlisted BTC checks never use ETH partition keys.
+
+### Commands / Code
+
+```python
+holdout_lineage_basis = _build_holdout_lineage_basis(
+    configuration_id=configuration_id,
+    cycle_rows=config_cycle_rows,
+    trade_rows=config_trade_rows,
+)
+lineage_cycle_rows, lineage_trade_rows = _scope_rows_to_holdout_lineage(
+    cycle_rows=config_cycle_rows,
+    trade_rows=config_trade_rows,
+    lineage_basis=holdout_lineage_basis,
+)
+partition = _build_holdout_partition(
+    cycle_rows=lineage_cycle_rows,
+    lineage_basis=holdout_lineage_basis,
+)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_robustness_and_sizing.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
