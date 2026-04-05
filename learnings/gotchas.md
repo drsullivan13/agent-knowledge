@@ -1243,3 +1243,42 @@ PY2
 
 python3 -m pytest tests/test_structural_mispricing_discovery.py -v --tb=short
 ```
+
+
+---
+
+## BLS and Congress HTML pages may be blocked while API or alternate official endpoints remain reachable
+**Date:** 2026-04-05
+**Context:** kalshi-agent structural-mispricing discovery reachability evidence
+**Tags:** structural-mispricing, discovery, source-manifest, reachability, bls, congress, curl
+
+### Problem / Observation
+
+For structural-mispricing discovery, several seemingly official URLs (for example `www.bls.gov/...` pages and some `congress.gov/...` pages) returned `403` in this environment, which caused required `resolution`/`calendar` evidence to fail closed when `sample_fetch_metadata` needed `fetch_status=reachable`.
+
+### Resolution / Insight
+
+Sample each accepted-family source with `curl` and store the observed `http_status` + `content_type` in `source_fetch_observations`. If primary HTML pages are blocked, switch to reachable official/public alternatives (for example BLS public API endpoints and reachable Senate legislative pages) and key observations by `(source_id, url)` so metadata propagates verbatim per source URL.
+
+### Commands / Code
+
+```bash
+python3 - <<'PY2'
+import subprocess
+from datetime import datetime, UTC
+
+urls = [
+  'https://api.bls.gov/publicAPI/v2/timeseries/data/CUSR0000SA0',
+  'https://api.bls.gov/publicAPI/v2/surveys',
+  'https://www.senate.gov/legislative/calendars.htm',
+]
+for url in urls:
+    out = subprocess.run(
+        ['curl', '-L', '--max-time', '30', '-sS', '-o', '/dev/null', '-w', '%{{http_code}}\t%{{content_type}}', url],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    print(url, out.stdout.strip(), datetime.now(tz=UTC).isoformat())
+PY2
+```
