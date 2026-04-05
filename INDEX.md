@@ -76,3 +76,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | One-hour strategy research validations can produce empty confirmation partitions | learnings/gotchas.md | crypto, strategy-research, validation, holdout, confirmation, user-testing, artifacts | 2026-04-05 |
 | Surface reference-quality guardrails from backtest into strategy summaries | learnings/patterns.md | crypto, backtest, strategy-research, lineage, guardrails, timing-alignment | 2026-04-05 |
 | Build final decision input bundles by reconciling family-window lineage across discovery→archive→backtest→strategy | learnings/patterns.md | crypto, strategy-research, final-bundle, lineage, family-window, provenance | 2026-04-05 |
+| Derive a deterministic crypto GO/HOLD decision report from strategy lineage artifacts | learnings/patterns.md | crypto, decision-report, lineage, reproducibility, hold-go, validation | 2026-04-05 |

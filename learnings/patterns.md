@@ -642,3 +642,36 @@ python3 -m pytest tests/test_crypto_final_bundle.py -v --tb=short
 python3 -m pytest tests/test_crypto_strategy_research.py tests/test_crypto_pipeline_lineage.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Derive a deterministic crypto GO/HOLD decision report from strategy lineage artifacts
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python crypto decision-gate reporting
+**Tags:** crypto, decision-report, lineage, reproducibility, hold-go, validation
+
+### Problem / Observation
+
+The final decision stage needed a single GO/HOLD artifact that reconciles cycle/trade/strategy/sizing metrics, stays isolated under `data/crypto_research/`, and can be regenerated deterministically from fixed strategy archives.
+
+### Resolution / Insight
+
+Use the strategy run manifest as the single entrypoint and traverse lineage (`strategy_summary` → `backtest_run_manifest` → `cycle/trade/summary` + `final_evaluation_bundle`). Build explicit gate rows (public/free provenance, broad-family coverage, expectancy, holdout robustness, evidence sufficiency, non-zero conservative sizing, lineage consistency). Compute a stable business hash from report sections excluding run timestamp/run id; this gives reproducibility checks without forcing byte-identical full JSON.
+
+### Commands / Code
+
+```python
+outputs = run_decision_report(
+    strategy_run_manifest_path=Path(strategy_outputs["artifacts"]["run_manifest"]),
+    output_root=Path("data/crypto_research"),
+)
+report = json.loads(Path(outputs["artifacts"]["decision_report"]).read_text())
+assert report["verdict"] in {"GO", "HOLD"}
+assert report["business_conclusion_hash_sha256"]
+```
+
+```bash
+python3 -m pytest tests/test_crypto_decision_report.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+python3 -m py_compile kalshi_agent/crypto_research/decision_report.py
+```
