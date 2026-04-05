@@ -548,3 +548,45 @@ git -C /Users/dansullivan/workspace/kalshi-agent show bc597621c84a6f02ded6ae216b
 # 5) Then write .factory/validation/<milestone>/scrutiny/reviews/<feature>.json manually
 # using the same schema as neighboring scrutiny review files.
 ```
+
+---
+
+## Crypto collection/manual checks must use canonical `data/crypto_research` output roots
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python crypto research CLI validation
+**Tags:** crypto, collection, namespace, output-root, validation, cli
+
+### Problem / Observation
+
+Running `run_collection(...)` with a temporary directory outside the repository (for example under `/var/.../tmp`) fails with:
+`ValueError: output_root must be under canonical data/crypto_research namespace`.
+
+### Resolution / Insight
+
+For ad-hoc/manual checks, place temporary outputs under the repo’s canonical namespace (for example `data/crypto_research/tmp-...`) or monkeypatch `_canonical_crypto_research_root` in tests. The namespace guard is strict by design and rejects paths merely named `data/crypto_research` outside the repo root.
+
+### Commands / Code
+
+```bash
+# Fails: outside canonical namespace
+python3 - <<'PY'
+from pathlib import Path
+import tempfile
+from kalshi_agent.crypto_research.collection import run_collection
+run_collection(output_root=Path(tempfile.mkdtemp())/"data"/"crypto_research")
+PY
+
+# Works: under repo-root canonical namespace
+python3 - <<'PY'
+from pathlib import Path
+import uuid
+from kalshi_agent.crypto_research.collection import run_collection
+root = Path("/Users/dansullivan/workspace/kalshi-agent/data/crypto_research")/f"tmp-inspect-{uuid.uuid4().hex[:8]}"
+root.mkdir(parents=True, exist_ok=True)
+run_collection(
+    output_root=root,
+    window_start_utc="2026-04-01T00:00:00+00:00",
+    window_end_utc="2026-04-01T01:00:00+00:00",
+)
+PY
+```

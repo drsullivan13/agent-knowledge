@@ -61,6 +61,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Scrutiny reruns can overwrite prior review JSON in place | learnings/tools.md | factory, scrutiny, validation, review, rerun, auditability | 2026-04-04 |
 | If a `scrutiny-feature-reviewer` Task never writes its report, recover from the mission handoff | learnings/tools.md | factory, scrutiny, task, subagent, review, handoff, fallback | 2026-04-05 |
 | Crypto backtest hedge validation can use a `python3` inline wrapper when the module CLI lacks strategy-config args | learnings/tools.md | kalshi, crypto, backtest, cli, validation, hedging, user-testing | 2026-04-04 |
+| Crypto collection/manual checks must use canonical `data/crypto_research` output roots | learnings/tools.md | crypto, collection, namespace, output-root, validation, cli | 2026-04-05 |
 | Mixed-asset discovery cannot reuse a BTC-only reference manifest | learnings/gotchas.md | crypto, discovery, manifests, reference-data, lineage, schemas | 2026-04-04 |
 | Use run-scoped dirs plus manifest hashes for append-safe research collection scaffolds | learnings/patterns.md | crypto, collection, manifests, lineage, reproducibility, data-isolation | 2026-04-04 |
 | Record run-level timing quality plus raw epoch-ms fields in external reference archives | learnings/patterns.md | crypto, collection, external-reference, timestamp, lineage, alignment | 2026-04-04 |
