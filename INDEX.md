@@ -73,3 +73,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Strategy research matched-window and holdout checks must preserve same family-window lineage | learnings/gotchas.md | crypto, strategy-research, scrutiny, matched-window, holdout, lineage, hedging | 2026-04-04 |
 | Build strategy research by post-processing execution-aware backtest ledgers | learnings/patterns.md | crypto, strategy-research, backtest, ranking, regime-slices, hedging | 2026-04-04 |
 | Robustness holdouts must be scoped per-configuration lineage and surfaced in artifacts | learnings/gotchas.md | crypto, strategy-research, robustness, holdout, lineage, artifacts | 2026-04-05 |
+| One-hour strategy research validations can produce empty confirmation partitions | learnings/gotchas.md | crypto, strategy-research, validation, holdout, confirmation, user-testing, artifacts | 2026-04-05 |

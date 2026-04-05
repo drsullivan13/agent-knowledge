@@ -1172,3 +1172,46 @@ partition = _build_holdout_partition(
 python3 -m pytest tests/test_crypto_robustness_and_sizing.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## One-hour strategy research validations can produce empty confirmation partitions
+**Date:** 2026-04-05
+**Context:** kalshi-agent crypto strategy research user-testing
+**Tags:** crypto, strategy-research, validation, holdout, confirmation, user-testing, artifacts
+
+### Problem / Observation
+
+When strategy research is validated on a very short collection window (for example a single 1-hour slice), the shortlisted robustness checks can be correctly scoped to the intended lineage but still emit `confirmation_partition_keys=[]` because only one executable family-window exists. This can look like missing holdout logic if you only check for non-empty confirmation partitions.
+
+### Resolution / Insight
+
+Validate the holdout machinery from the artifact shape, not from a required non-empty confirmation slice. For a pass on surfaced robustness behavior, confirm that `partition_scope=configuration_specific_comparable_lineage`, the shortlisted `holdout_lineage_basis.family_id` stays on the expected family (for the seed configs here: `btc-usd-15m`), and `robustness_blocking_reasons` explicitly fail closed when the confirmation side is empty.
+
+### Commands / Code
+
+```bash
+python3 -m kalshi_agent.crypto_research.discovery \
+  --output-dir /Users/dansullivan/workspace/kalshi-agent/data/crypto_research/user-testing/strategy-research/group-b/discovery
+
+python3 -m kalshi_agent.crypto_research.collection \
+  --output-root /Users/dansullivan/workspace/kalshi-agent/data/crypto_research/user-testing/strategy-research/group-b \
+  --window-start-utc 2026-04-01T00:00:00+00:00 \
+  --window-end-utc 2026-04-01T01:00:00+00:00
+
+python3 -m kalshi_agent.crypto_research.strategy_research \
+  --collection-run-manifest /Users/dansullivan/workspace/kalshi-agent/data/crypto_research/user-testing/strategy-research/group-b/collection_runs/collection-20260405T001614668889Z-1a0448d8/run_manifest.json \
+  --fee-assumptions-path /Users/dansullivan/workspace/kalshi-agent/data/crypto_research/user-testing/strategy-research/group-b/discovery/fee_assumptions.json \
+  --output-root /Users/dansullivan/workspace/kalshi-agent/data/crypto_research/user-testing/strategy-research/group-b
+```
+
+```python
+import json
+from pathlib import Path
+
+robustness = json.loads(Path("robustness_and_sizing.json").read_text())
+for row in robustness["shortlisted_robustness_checks"]:
+    assert row["holdout_lineage_basis"]["family_id"] == "btc-usd-15m"
+    assert row["confirmation_partition_keys"] == []
+    assert "confirmation_partition_non_executable" in row["robustness_blocking_reasons"]
+```
