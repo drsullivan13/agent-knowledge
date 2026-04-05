@@ -75,3 +75,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Robustness holdouts must be scoped per-configuration lineage and surfaced in artifacts | learnings/gotchas.md | crypto, strategy-research, robustness, holdout, lineage, artifacts | 2026-04-05 |
 | One-hour strategy research validations can produce empty confirmation partitions | learnings/gotchas.md | crypto, strategy-research, validation, holdout, confirmation, user-testing, artifacts | 2026-04-05 |
 | Surface reference-quality guardrails from backtest into strategy summaries | learnings/patterns.md | crypto, backtest, strategy-research, lineage, guardrails, timing-alignment | 2026-04-05 |
+| Build final decision input bundles by reconciling family-window lineage across discovery→archive→backtest→strategy | learnings/patterns.md | crypto, strategy-research, final-bundle, lineage, family-window, provenance | 2026-04-05 |

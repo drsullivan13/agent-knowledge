@@ -594,3 +594,51 @@ python3 -m pytest tests/test_crypto_pipeline_lineage.py -v --tb=short
 python3 -m pytest tests/test_crypto_backtest_core.py tests/test_crypto_strategy_research.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Build final decision input bundles by reconciling family-window lineage across discovery→archive→backtest→strategy
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python crypto decision-gate pre-report layer
+**Tags:** crypto, strategy-research, final-bundle, lineage, family-window, provenance
+
+### Problem / Observation
+
+The decision-gate stage needed one auditable bundle proving three things before reporting: no discovered/archived family-window silently disappeared, downstream stages only used archived public/free inputs, and family settlement/reference choices stayed consistent from discovery through final-decision inputs.
+
+### Resolution / Insight
+
+Add a dedicated final-bundle builder that loads discovery artifacts (market catalog + source manifest), collection manifests/archives, backtest manifests, and strategy outputs, then emits:
+- `family_window_lineage_reconciliation` with explicit `final_decision_input.status` and `drop_reason` per family-window
+- `archived_public_free_inputs_validation` checks (public_free/read_only + backtest archive-input identity + strategy→backtest lineage)
+- `family_choice_lineage` consistency states (`consistent`, `downgraded`, `inconsistent`) that keep settlement-rule IDs and reference-source choices explicit.
+
+### Commands / Code
+
+```python
+final_evaluation_bundle = final_bundle_module.build_final_evaluation_bundle(
+    generated_at_utc=generated_at_utc,
+    strategy_run_id=run_id,
+    collection_run_manifest_path=collection_run_manifest_path,
+    collection_run_manifest=collection_run_manifest,
+    backtest_run_manifest_path=Path(backtest_outputs["artifacts"]["run_manifest"]),
+    backtest_run_manifest=backtest_manifest,
+    cycle_rows=cycle_rows,
+    trade_rows=trade_rows,
+    strategy_summary=strategy_summary,
+    strategy_artifacts={
+        "strategy_summary": strategy_summary_path,
+        "regime_slices": regime_slices_path,
+        "robustness_and_sizing": robustness_and_sizing_path,
+    },
+    discovery_artifacts=final_bundle_module.resolve_discovery_artifacts(
+        fee_assumptions_path=fee_assumptions_path.resolve() if fee_assumptions_path else None
+    ),
+)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_final_bundle.py -v --tb=short
+python3 -m pytest tests/test_crypto_strategy_research.py tests/test_crypto_pipeline_lineage.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
