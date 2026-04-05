@@ -715,3 +715,53 @@ candidate_matches = selection_candidates.get(
 )
 selection_sampled_at_present = any(match["sampled_at_utc"] for match in candidate_matches)
 ```
+
+---
+
+## Structural screen flow reports can be built from run-scoped stale/thin ledgers plus screen summary
+**Date:** 2026-04-05
+**Context:** Factory user-testing flow validator, structural-mispricing screens
+**Tags:** factory, user-testing, structural-mispricing, screens, flow-report, artifacts
+
+### Problem / Observation
+
+For structural-screen flow validation, the assigned assertions (`VAL-SCREEN-007/008/009/010/017`) had to be proven from the CLI/artifact surface only. The run produced one accepted stale-repricing row but zero accepted thin-book rows, so the validator needed a deterministic way to distinguish “fail-closed, still valid” from “screen never emitted the required audit fields.”
+
+### Resolution / Insight
+
+Use the run-scoped artifacts only: `screen_run_manifest.json`, `screen_summary.json`, `stale_repricing_ledger.json`, `thin_book_overshoot_ledger.json`, `screen_lineage_manifest.json`, and `screen_denominators.jsonl`. Validate accepted stale rows for anchor/timing fields directly from `stale_repricing_ledger.json`. For thin-book, treat zero accepted candidates as a pass only when every row stays non-accepted with explicit `reason_code` / `non_tradeable_reason` and preserved anchor lineage (for example `related_contract_anchor` + `related_contract_ids`) instead of disappearing from denominators.
+
+### Commands / Code
+
+```bash
+python3 -m kalshi_agent.structural_mispricing.screens \
+  --collection-run-manifest "/Users/dansullivan/workspace/kalshi-agent/data/structural_mispricing/collection_runs/<run_id>/run_manifest.json" \
+  --output-root "/Users/dansullivan/workspace/kalshi-agent/data/structural_mispricing/user-testing/structural-screens/<group>"
+```
+
+```python
+manifest = json.loads((run_dir / "screen_run_manifest.json").read_text())
+summary = json.loads((run_dir / "screen_summary.json").read_text())
+stale = json.loads((run_dir / "stale_repricing_ledger.json").read_text())
+thin = json.loads((run_dir / "thin_book_overshoot_ledger.json").read_text())
+
+accepted_stale = [row for row in stale["rows"] if row["status"] == "accepted_candidate"]
+assert all(
+    accepted_stale[0][field] is not None
+    for field in [
+        "anchor_type",
+        "anchor_source_id",
+        "anchor_event_id",
+        "anchor_timestamp",
+        "pre_anchor_market_timestamp",
+        "post_anchor_market_timestamp",
+        "repricing_lag_ms",
+    ]
+)
+
+thin_rows = thin["rows"]
+assert all(row["status"] == "skipped_window" for row in thin_rows)
+assert all(row["reason_code"] == "insufficient_depth_snapshot" for row in thin_rows)
+assert all(row["anchor_source_id"] == "related_contract_anchor" for row in thin_rows)
+assert all(row["related_contract_ids"] for row in thin_rows)
+```

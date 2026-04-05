@@ -90,3 +90,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Canonicalize collection drift on business keys and ignore run metadata | learnings/patterns.md | structural-mispricing, collection, drift-report, reproducibility, lineage, business-key | 2026-04-05 |
 | Collection reproducibility validators should ignore run-scoped capture metadata | learnings/patterns.md | structural-mispricing, collection, validation, reproducibility, lineage, checksums | 2026-04-05 |
 | Fallback comparator captures may map to source-selection inventory under a different source role | learnings/tools.md | factory, user-testing, structural-mispricing, collection, provenance, fallback, artifacts | 2026-04-05 |
+| Structural screen flow reports can be built from run-scoped stale/thin ledgers plus screen summary | learnings/tools.md | factory, user-testing, structural-mispricing, screens, flow-report, artifacts | 2026-04-05 |
