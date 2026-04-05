@@ -548,3 +548,49 @@ ranked = sorted(
 python3 -m pytest tests/test_crypto_strategy_research.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Surface reference-quality guardrails from backtest into strategy summaries
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python crypto end-to-end lineage guardrails
+**Tags:** crypto, backtest, strategy-research, lineage, guardrails, timing-alignment
+
+### Problem / Observation
+
+Cross-stage validation needed explicit pre-report guardrails proving degraded reference quality slices were blocked or downgraded, timing alignment stayed no-lookahead, and strategy evaluation reflected broad-family executable outcomes.
+
+### Resolution / Insight
+
+Add explicit `reference_quality_status` / `reference_quality_reasons` on backtest cycle rows (`healthy`, `downgraded`, `blocked`) with concrete blockers (`coarse_timestamp`, `stale_reference`, `reference_lookahead_blocked`). Then build `pipeline_guardrails` and `broad_family_executable_outcomes` in `strategy_summary.json` from cycle/trade ledgers plus collection lineage so downstream report stages can gate on machine-readable artifacts.
+
+### Commands / Code
+
+```python
+# backtest cycle-level guardrails
+if reference_row is not None and not _reference_has_millisecond_precision(reference_row):
+    skip_reason = "coarse_timestamp"
+elif reference_row is not None and reference_lag_ms > MAX_REFERENCE_STALENESS_MS:
+    skip_reason = "stale_reference"
+if len(source_ids_in_window) > 1:
+    reference_quality_reasons.append("source_switch")
+```
+
+```python
+# strategy-level pre-report gate surfaces
+strategy_summary["pipeline_guardrails"] = _build_pipeline_guardrails(
+    cycle_rows=cycle_rows,
+    trade_rows=trade_rows,
+)
+strategy_summary["broad_family_executable_outcomes"] = _build_broad_family_executable_outcomes(
+    collection_run_manifest=collection_run_manifest,
+    cycle_rows=cycle_rows,
+    trade_rows=trade_rows,
+)
+```
+
+```bash
+python3 -m pytest tests/test_crypto_pipeline_lineage.py -v --tb=short
+python3 -m pytest tests/test_crypto_backtest_core.py tests/test_crypto_strategy_research.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
