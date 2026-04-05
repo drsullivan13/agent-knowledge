@@ -87,3 +87,6 @@ Scan this file first to avoid duplicating existing knowledge.
 | Force-add ignored `data/` discovery scan captures used as runtime inputs | learnings/tools.md | git, gitignore, data, structural-mispricing, discovery, scan-capture | 2026-04-05 |
 | BLS and Congress HTML pages may be blocked while API or alternate official endpoints remain reachable | learnings/gotchas.md | structural-mispricing, discovery, source-manifest, reachability, bls, congress, curl | 2026-04-05 |
 | Bootstrap structural collection contracts from discovery snapshots when shared artifacts are missing | learnings/patterns.md | structural-mispricing, collection, manifests, discovery-contract, reconciliation, append-safe | 2026-04-05 |
+| Canonicalize collection drift on business keys and ignore run metadata | learnings/patterns.md | structural-mispricing, collection, drift-report, reproducibility, lineage, business-key | 2026-04-05 |
+| Collection reproducibility validators should ignore run-scoped capture metadata | learnings/patterns.md | structural-mispricing, collection, validation, reproducibility, lineage, checksums | 2026-04-05 |
+| Fallback comparator captures may map to source-selection inventory under a different source role | learnings/tools.md | factory, user-testing, structural-mispricing, collection, provenance, fallback, artifacts | 2026-04-05 |

@@ -682,3 +682,36 @@ Allowed scope only:
 - Create exactly one file:
   - /Users/dansullivan/workspace/kalshi-agent/.factory/validation/universe-discovery/scrutiny/reviews/structural-mispricing-discovery-auditability-fix.json
 ```
+
+---
+
+## Fallback comparator captures may map to source-selection inventory under a different source role
+**Date:** 2026-04-05
+**Context:** Factory user-testing flow validator, structural-mispricing collection provenance checks
+**Tags:** factory, user-testing, structural-mispricing, collection, provenance, fallback, artifacts
+
+### Problem / Observation
+
+While validating `VAL-DATA-006`, a downgraded comparator capture (`selected_fallback`) looked like a provenance failure when the check joined raw captures to `source_selection_inventory` on `(family_id, source_id, source_role, source_url)`. The archived capture kept `source_role="reference_value"`, but the candidate inventory exposed the same fallback source as `source_role="fallback"`.
+
+### Resolution / Insight
+
+For provenance checks, match fallback captures to source-selection candidates on `family_id + source_id + source_url` (or otherwise allow either the business role or `fallback`) and then verify `sampled_at_utc`, raw-capture hash, and normalized-row lineage. A strict role-equality join can create false negatives even when the archived fallback provenance is complete.
+
+### Commands / Code
+
+```python
+selection_candidates = {}
+for family_row in source_selection_inventory["family_source_rows"]:
+    for candidate in family_row["comparator_candidates"]:
+        selection_candidates.setdefault(
+            (family_row["family_id"], candidate["source_id"], candidate["source_url"]),
+            [],
+        ).append(candidate)
+
+candidate_matches = selection_candidates.get(
+    (capture["family_id"], capture["source_id"], capture["source_url"]),
+    [],
+)
+selection_sampled_at_present = any(match["sampled_at_utc"] for match in candidate_matches)
+```

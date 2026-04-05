@@ -792,3 +792,107 @@ python3 -m pytest tests/test_structural_mispricing_collection.py -v --tb=short
 python3 -m kalshi_agent.structural_mispricing.collection --output-root data/structural_mispricing --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-02T00:00:00+00:00
 python3 -m pytest tests/ -v --tb=short
 ```
+
+---
+
+## Canonicalize collection drift on business keys and ignore run metadata
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing collection lineage
+**Tags:** structural-mispricing, collection, drift-report, reproducibility, lineage, business-key
+
+### Problem / Observation
+
+Run-scoped artifact paths and run IDs always change between collection invocations, so naïve row diffs can show every record as new/revised even when business content is unchanged. Duplicate captures can also inflate drift deltas unless they are explicitly suppressed from canonical comparison.
+
+### Resolution / Insight
+
+Build drift comparison on canonical business records keyed by `business_key`. Drop rows marked `duplicate_capture`, keep the highest `revision_number` per key, and hash only business fields (family/window/surface, source-selection role, source-time precision, tradability/quote economics, comparator value) while excluding run-specific lineage fields. With fixed window inputs this yields stable `unchanged_count` across reruns and explicit `new/revised/deleted` only when business content drifts.
+
+### Commands / Code
+
+```python
+def _canonical_business_records(rows):
+    canonical = {}
+    duplicate_suppressed = 0
+    for row in rows:
+        if row.get("duplicate_capture"):
+            duplicate_suppressed += 1
+            continue
+        key = row["business_key"]
+        if key not in canonical or row["revision_number"] > canonical[key]["revision_number"]:
+            canonical[key] = row
+    hashes = {
+        k: _sha256_json({
+            "family_id": r["family_id"],
+            "family_window_id": r["family_window_id"],
+            "requested_surface": r["requested_surface"],
+            "source_timestamp_precision_class": r["timing"]["source_timestamp_precision_class"],
+            "market_status": r["tradability"]["market_status"],
+            "best_bid": r["quote"]["best_bid"],
+            "best_ask": r["quote"]["best_ask"],
+            "comparator_value": r["values"]["comparator_value"],
+        })
+        for k, r in canonical.items()
+    }
+    return hashes, duplicate_suppressed
+```
+
+```bash
+python3 -m kalshi_agent.structural_mispricing.collection --output-root data/structural_mispricing --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-05T00:00:00+00:00
+python3 -m kalshi_agent.structural_mispricing.collection --output-root data/structural_mispricing --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-05T00:00:00+00:00
+python3 -m pytest tests/test_structural_mispricing_collection.py -v --tb=short
+```
+
+---
+
+## Collection reproducibility validators should ignore run-scoped capture metadata
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing user-testing validation
+**Tags:** structural-mispricing, collection, validation, reproducibility, lineage, checksums
+
+### Problem / Observation
+
+When validating `VAL-DATA-012`, a naïve rerun comparison that still included `source_capture_sha256` (or raw-capture inventory checksums) marked every business record as different even though the collection drift report showed `28` unchanged rows and zero `new/revised/deleted` records. Raw capture files can differ run to run because the archived payloads are run-scoped, while the business content and lineage relationships remain stable.
+
+### Resolution / Insight
+
+For business-reproducibility checks, compare normalized rows after removing `lineage.run_id`, `lineage.source_capture_id`, `lineage.source_capture_path`, `lineage.source_capture_sha256`, and `timing.collector_timestamp_utc`. Compare raw-capture lineage separately by business relationship fields (`business_key`, `requested_surface`, `record_class`, `source_id`, `source_role`, `duplicate_of_business_key`, `revised_from_business_key`) rather than byte hashes. Keep checksum verification as a separate immutability assertion (`VAL-DATA-013`), not part of the rerun business-equivalence check.
+
+### Commands / Code
+
+```python
+def canonicalize_row(row):
+    row = copy.deepcopy(row)
+    for key in ["run_id", "source_capture_id", "source_capture_path", "source_capture_sha256"]:
+        row["lineage"].pop(key, None)
+    row["timing"].pop("collector_timestamp_utc", None)
+    return row
+```
+
+```python
+def canonical_capture_lineage_rows(captures):
+    return sorted(
+        {
+            "business_key": c["business_key"],
+            "requested_surface": c["requested_surface"],
+            "record_class": c["record_class"],
+            "source_id": c["source_id"],
+            "source_role": c["source_role"],
+            "duplicate_of_business_key": c.get("duplicate_of_business_key"),
+            "revised_from_business_key": c.get("revised_from_business_key"),
+            "revision_number": c["revision_number"],
+        }
+        for c in captures
+    )
+```
+
+```bash
+python3 -m kalshi_agent.structural_mispricing.collection --output-root "/Users/dansullivan/workspace/kalshi-agent/data/structural_mispricing/user-testing/data-collection-lineage/group-c" --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-05T00:00:00+00:00 --discovery-output-root "/Users/dansullivan/workspace/kalshi-agent/data/structural_mispricing/discovery"
+python3 -m kalshi_agent.structural_mispricing.collection --output-root "/Users/dansullivan/workspace/kalshi-agent/data/structural_mispricing/user-testing/data-collection-lineage/group-c" --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-05T00:00:00+00:00 --discovery-output-root "/Users/dansullivan/workspace/kalshi-agent/data/structural_mispricing/discovery"
+python3 - <<'PY'
+import copy, json
+from pathlib import Path
+def load_jsonl(path):
+    return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
+PY
+```
