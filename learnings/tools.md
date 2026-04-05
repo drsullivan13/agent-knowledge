@@ -624,3 +624,28 @@ run_collection(
 )
 PY
 ```
+
+---
+
+## Force-add ignored `data/` discovery scan captures used as runtime inputs
+**Date:** 2026-04-05
+**Context:** kalshi-agent structural-mispricing discovery auditability
+**Tags:** git, gitignore, data, structural-mispricing, discovery, scan-capture
+
+### Problem / Observation
+
+`run_discovery()` was refactored to require an archived scan capture under `data/structural_mispricing/...`, but the repo-level `.gitignore` has `data/` ignored. New scan capture files looked present locally, tests passed, and `git status` stayed clean unless you explicitly checked ignore rules.
+
+### Resolution / Insight
+
+When a mission runtime input must live under `data/`, confirm ignore behavior with `git check-ignore` and force-stage the file with `git add -f`. Otherwise the commit will compile locally but fail on fresh clones because the default runtime input file is missing.
+
+### Commands / Code
+
+```bash
+git -C /Users/dansullivan/workspace/kalshi-agent check-ignore -v \
+  data/structural_mispricing/discovery/scan_captures/public_kalshi_discovery_scan.json
+
+git -C /Users/dansullivan/workspace/kalshi-agent add -f \
+  data/structural_mispricing/discovery/scan_captures/public_kalshi_discovery_scan.json
+```

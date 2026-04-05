@@ -83,3 +83,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Fail-closed reference quality should be reason-driven across backtest→bundle→report | learnings/patterns.md | crypto, decision-gate, fail-closed, reference-quality, lineage, backtest, report | 2026-04-05 |
 | Mark dropped non-discovery windows as downgraded lineage overrides | learnings/patterns.md | crypto, decision-gate, lineage, fail-closed, final-bundle, decision-report, validation | 2026-04-05 |
 | Structural mispricing discovery can satisfy schema tests while staying fully static | learnings/gotchas.md | structural-mispricing, discovery, scrutiny, auditability, lineage, fixtures | 2026-04-05 |
+| Force-add ignored `data/` discovery scan captures used as runtime inputs | learnings/tools.md | git, gitignore, data, structural-mispricing, discovery, scan-capture | 2026-04-05 |
