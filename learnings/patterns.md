@@ -717,3 +717,38 @@ python3 -m pytest tests/test_crypto_final_bundle.py -v --tb=short
 python3 -m pytest tests/test_crypto_decision_report.py -v --tb=short
 python3 -m pytest tests/ -v --tb=short
 ```
+
+## Mark dropped non-discovery windows as downgraded lineage overrides
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python crypto final-bundle + decision-report lineage
+**Tags:** crypto, decision-gate, lineage, fail-closed, final-bundle, decision-report, validation
+
+### Problem / Observation
+
+`VAL-XCRYPTO-008` still failed after reference-quality blocking was fixed because `eth-usd-5m` (not accepted in discovery) stayed in downstream lineage sets as `inconsistent` with blank settlement/reference IDs. User-testing expected an explicit dropped/override lineage record, not an unresolved inconsistency row.
+
+### Resolution / Insight
+
+When a family or family-window has no discovery choice **and** is already dropped from final decision inputs, treat lineage as an explicit downgraded override instead of inconsistent. Populate non-empty sentinel settlement/reference lineage IDs (`dropped_missing_discovery_family_lineage`) and add a machine-readable override reason (`dropped_family_window_lineage_override`). In decision-report reference assessment, fall back to final-decision lineage IDs when discovery IDs are empty.
+
+### Commands / Code
+
+```python
+MISSING_DISCOVERY_LINEAGE_PLACEHOLDER = "dropped_missing_discovery_family_lineage"
+DROPPED_LINEAGE_OVERRIDE_REASON = "dropped_family_window_lineage_override"
+
+if not discovery_choice and is_dropped_window:
+    consistency_status = "downgraded"
+    consistency_reasons.extend(
+        ["missing_discovery_family_choice", DROPPED_LINEAGE_OVERRIDE_REASON]
+    )
+    final_input_settlement_rule_id = MISSING_DISCOVERY_LINEAGE_PLACEHOLDER
+    final_input_reference_methodology_id = MISSING_DISCOVERY_LINEAGE_PLACEHOLDER
+```
+
+```bash
+python3 -m pytest tests/test_crypto_pipeline_lineage.py -v --tb=short
+python3 -m pytest tests/test_crypto_final_bundle.py -v --tb=short
+python3 -m pytest tests/test_crypto_decision_report.py -v --tb=short
+python3 -m pytest tests/ -v --tb=short
+```
