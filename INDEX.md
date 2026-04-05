@@ -60,6 +60,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Scrutiny reruns should snapshot prior synthesis as `synthesis.roundN.json` | learnings/tools.md | factory, scrutiny, validation, synthesis, rerun | 2026-04-04 |
 | Scrutiny reruns can overwrite prior review JSON in place | learnings/tools.md | factory, scrutiny, validation, review, rerun, auditability | 2026-04-04 |
 | If a `scrutiny-feature-reviewer` Task never writes its report, recover from the mission handoff | learnings/tools.md | factory, scrutiny, task, subagent, review, handoff, fallback | 2026-04-05 |
+| If a `user-testing-flow-validator` Task produces artifacts but no report, rerun it in report-only mode | learnings/tools.md | factory, subagent, task, validation, user-testing, reports, fallback | 2026-04-04 |
 | Crypto backtest hedge validation can use a `python3` inline wrapper when the module CLI lacks strategy-config args | learnings/tools.md | kalshi, crypto, backtest, cli, validation, hedging, user-testing | 2026-04-04 |
 | Crypto collection/manual checks must use canonical `data/crypto_research` output roots | learnings/tools.md | crypto, collection, namespace, output-root, validation, cli | 2026-04-05 |
 | Mixed-asset discovery cannot reuse a BTC-only reference manifest | learnings/gotchas.md | crypto, discovery, manifests, reference-data, lineage, schemas | 2026-04-04 |

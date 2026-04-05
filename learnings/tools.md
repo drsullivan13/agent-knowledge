@@ -321,6 +321,40 @@ Constraints:
 
 ---
 
+## If a `user-testing-flow-validator` Task produces artifacts but no report, rerun it in report-only mode
+**Date:** 2026-04-04
+**Context:** Factory Task subagents, mission validation, CLI artifact testing
+**Tags:** factory, subagent, task, validation, user-testing, reports, fallback
+
+### Problem / Observation
+
+A `user-testing-flow-validator` Task launched a full CLI validation flow, created the expected isolated output tree and evidence snapshots, but returned `No output received from task subagent.` and never wrote the assigned flow JSON report.
+
+### Resolution / Insight
+
+First inspect whether the validator already produced usable artifacts under its assigned output root and evidence dir. If it did, launch a second `user-testing-flow-validator` Task with a much narrower prompt: forbid rerunning the flow, point it at the existing artifacts only, and ask it to write just the missing flow report plus any derived assertion-check JSON. That recovered the report cleanly without duplicating long-running validation work.
+
+### Commands / Code
+
+```text
+Goal:
+- Inspect the existing rerun artifacts and write the missing flow report.
+
+Use ONLY these existing paths:
+- Output root: /.../data/crypto_research/user-testing/<milestone>/<group>
+- Evidence dir: /.../missions/.../evidence/<milestone>/<group>
+- Flow report path: /.../.factory/validation/<milestone>/user-testing/flows/<group>.json
+
+Instructions:
+- Read the generated backtest summary/cycle ledger, final_evaluation_bundle, and decision_report.
+- Determine pass/fail for the assigned assertions.
+- Write a complete JSON flow report to the assigned flow report path.
+- Do not rerun discovery/collection/strategy/report.
+- Do not modify source files.
+```
+
+---
+
 ## Docker CLI may fail until Docker Desktop is explicitly started in exec sessions
 **Date:** 2026-03-29
 **Context:** macOS Factory exec mode, Docker buildx, ECR rollout
