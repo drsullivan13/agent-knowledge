@@ -896,3 +896,254 @@ def load_jsonl(path):
     return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()]
 PY
 ```
+
+---
+
+## Use explicit denominator rows plus candidate rows for structural screen auditability
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing screens
+**Tags:** structural-mispricing, screens, denominators, manifests, clustering, auditability
+
+### Problem / Observation
+
+Screen summaries can accidentally cherry-pick favorable subsets if they only count emitted anomalies. The contract for structural screens needed complete per-screen denominators (eligible/ineligible/blocked/not_applicable/evaluated) while also preserving candidate outcomes like accepted/rejected/skipped/non-tradeable, duplicate-clustered episodes, and already-reflected/prepriced rows.
+
+### Resolution / Insight
+
+Model screens with two explicit ledgers: (1) `screen_denominators.jsonl` with one row per `screen_id + family_window_id` and eligibility/evaluation status, and (2) `candidate_ledger.jsonl` with canonical candidate rows plus `duplicate_clustered` rows. Build summary counts by reconciling denominator rows and candidate statuses, and publish all thresholds/pricing/snapshot-alignment rules in `screen_run_manifest.json`.
+
+### Commands / Code
+
+```python
+denominator_row = {
+    "screen_id": screen_id,
+    "family_window_id": family_window_id,
+    "discovery_eligibility_status": discovery_status,
+    "eligibility_status": effective_status,  # eligible/ineligible/blocked/not_applicable
+    "evaluation_status": "evaluated" if effective_status == "eligible" else "not_evaluated",
+}
+```
+
+```python
+candidate_row = {
+    "screen_id": screen_id,
+    "candidate_id": canonical_candidate_id,
+    "event_cluster_id": event_cluster_id,
+    "status": status,  # accepted_candidate/rejected_anomaly/skipped_window/non_tradeable_pending_eval/...
+    "reason_code": reason_code,
+    "snapshot_alignment": {"max_snapshot_skew_ms": 1500, "measured_skew_ms": measured_skew_ms},
+    "threshold_checks": threshold_checks,
+}
+```
+
+```bash
+python3 -m pytest tests/test_structural_mispricing_screens.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.collection --output-root data/structural_mispricing
+python3 -m kalshi_agent.structural_mispricing.screens --collection-run-manifest data/structural_mispricing/collection_runs/<run_id>/run_manifest.json --output-root data/structural_mispricing
+python3 -m pytest tests/ -v --tb=short
+```
+
+---
+
+## Structural screen ledgers should expose mechanism math and lineage at row level
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing screens
+**Tags:** structural-mispricing, screens, ledgers, lineage, validation-contract
+
+### Problem / Observation
+
+Generic candidate rows with only `status` and `reason_code` were not enough to satisfy screen-mechanism assertions. Validators needed explicit per-row math (cross-contract inequalities), anchor-implied deviations (stale/overshoot), procedural-rule lineage fields, and a manifest that keeps lineage visible even for skipped/dropped rows.
+
+### Resolution / Insight
+
+Keep one canonical candidate ledger, but enrich each row with screen-specific fields and add a dedicated `screen_lineage_manifest.json` projection. For every row, preserve both `screen_status` and `tradeability_status`, explicit non-tradeable reasons, and top-level lineage IDs (`settlement_rule_id`, `reference_methodology_id`, `anchor_source_id`, `official_source_id`). For anchor-based screens, publish `anchor_implied_value`, expected direction, and before/after deviations.
+
+### Commands / Code
+
+```python
+row.update(
+    {
+        "screen_status": status,
+        "tradeability_status": tradeability_status,
+        "non_tradeable_reason": reason_code if tradeability_status == "non_tradeable_pending_eval" else None,
+        "settlement_rule_id": lineage["settlement_rule_id"],
+        "reference_methodology_id": lineage["reference_methodology_id"],
+        "anchor_source_id": lineage["anchor_source_id"],
+        "official_source_id": lineage["official_source_id"],
+        "anomaly_type": anomaly_type,
+        "constraint_definition": constraint_definition,
+        "lhs_value": lhs_value,
+        "rhs_value": rhs_value,
+        "violation_slack": lhs_value - rhs_value,
+        "anchor_implied_value": anchor_implied_value,
+        "deviation_at_detection": deviation_at_detection,
+        "deviation_after_reversion": deviation_after_reversion,
+    }
+)
+```
+
+```bash
+python3 -m pytest tests/test_structural_mispricing_screens.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.screens --collection-run-manifest data/structural_mispricing/collection_runs/<run_id>/run_manifest.json --output-root data/structural_mispricing
+python3 -m pytest tests/ -v --tb=short
+```
+
+---
+
+## Keep structural screen overlap identity separate from duplicate-episode identity
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing screens
+**Tags:** structural-mispricing, screens, duplicate-clustering, event-identity, manifests, auditability
+
+### Problem / Observation
+
+Structural screen outputs were conflating two concepts: cross-screen event identity (`event_cluster_id`) and duplicate/revision episode identity. Duplicate rows were emitted through a boolean gate (0/1 per family-window) instead of true duplicate-episode cardinality, and manifest-declared clustering keys did not match emitted row fields.
+
+### Resolution / Insight
+
+Compute duplicate episodes from normalized observations using business-key episodes with either repeated rows or explicit `duplicate_capture` / `revision_number > 1` flags. Emit one `duplicate_clustered` row per duplicate episode **per eligible screen** with explicit `duplicate_episode_id` and `duplicate_cluster_id`, while keeping `event_cluster_id` unchanged for cross-screen overlap tracking. Declare these exact fields in `screen_run_manifest.json` clustering policy and assert reconciliation in regression tests.
+
+### Commands / Code
+
+```python
+# screens.py
+for duplicate_episode in family_window["duplicate_episodes"]:
+    duplicate_row = _build_duplicate_cluster_row(
+        screen_id=screen_id,
+        family_window=family_window,
+        duplicate_episode=duplicate_episode,
+        event_cluster_id=event_cluster_id,  # cross-screen overlap identity
+        canonical_candidate_id=str(canonical_row["candidate_id"]),
+        related_contract_ids=related_contract_ids,
+    )
+
+policy = {
+    "cross_screen_event_identity_field": "event_cluster_id",
+    "duplicate_episode_identity_field": "duplicate_episode_id",
+    "duplicate_cluster_identity_field": "duplicate_cluster_id",
+    "cluster_key_fields": ["screen_id", "family_window_id", "duplicate_episode_id"],
+}
+```
+
+```bash
+cd /Users/dansullivan/workspace/kalshi-agent
+python3 -m pytest tests/test_structural_mispricing_screens.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.screens --collection-run-manifest <run_manifest.json> --output-root data/structural_mispricing
+python3 -m pytest tests/ -v --tb=short
+```
+
+---
+
+## Derive structural mechanism ledgers directly from archived screen inputs
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing screens
+**Tags:** structural-mispricing, screens, ledgers, fail-closed, source-derived-math
+
+### Problem / Observation
+
+Screen mechanism rows were using synthetic placeholder logic (hard-coded cross-contract math, fixed stale-lag/deviation tables, canned procedural narrative text, and hash-based anchor normalization), so fields could look populated without being recomputable from archived discovery/collection artifacts.
+
+### Resolution / Insight
+
+Build per-screen evaluators that compute status/reason/metrics from `normalized_observations` evidence only, and fail closed with explicit reason codes + null metric fields when required evidence is missing. In practice: derive cross-contract inequalities from executable bid/ask legs, derive stale repricing lag from anchor timestamp vs quote collector time, and reject anchors whose comparator values cannot be truthfully mapped to probability space.
+
+### Commands / Code
+
+```python
+yes_leg_probability = float(best_ask) / 100.0
+no_leg_probability = (100.0 - float(best_bid)) / 100.0
+lhs_value = round(yes_leg_probability + no_leg_probability, 6)
+violation_slack = round(lhs_value - 1.0, 6)
+
+anchor_value, reason = _probability_anchor_value(raw_value=anchor_row["values"]["comparator_value"])
+if anchor_value is None:
+    return fail_closed("anchor_value_out_of_probability_bounds")
+
+repricing_lag_ms = int((post_quote_collector_dt - anchor_dt).total_seconds() * 1000)
+deviation_at_detection = round((best_ask / 100.0) - anchor_value, 6)
+deviation_after_reversion = round((best_bid / 100.0) - anchor_value, 6)
+```
+
+```bash
+python3 -m pytest tests/test_structural_mispricing_screens.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.collection --output-root data/structural_mispricing --window-start-utc 2026-01-01T00:00:00+00:00 --window-end-utc 2026-01-02T00:00:00+00:00
+python3 -m kalshi_agent.structural_mispricing.screens --collection-run-manifest data/structural_mispricing/collection_runs/<run_id>/run_manifest.json --output-root data/structural_mispricing
+python3 -m pytest tests/ -v --tb=short
+```
+---
+
+## Scope no-lookahead provenance to screen-specific timestamps
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing evaluation
+**Tags:** structural-mispricing, evaluation, lookahead, timestamps, validation
+
+### Problem / Observation
+
+A first-pass execution evaluator marked all accepted candidates as lookahead-blocked because it treated every official timestamp in a family window as required decision provenance, even for screens whose signals only depend on quote-time evidence.
+
+### Resolution / Insight
+
+Build required provenance timestamps per screen type (cross-contract, procedural, stale, thin-book) instead of taking the union of all family-window source timestamps. This keeps no-lookahead checks truthful and fail-closed without false positives.
+
+### Commands / Code
+
+```python
+def _required_source_timestamps(*, candidate_row, rows_for_window):
+    screen_id = str(candidate_row.get('screen_id'))
+    if screen_id == 'cross_contract_inconsistency':
+        return [candidate_row.get('source_timestamp'), first_quote_source_ts, first_quote_market_ts]
+    if screen_id == 'procedural_underreaction':
+        return [candidate_row.get('source_timestamp'), candidate_row.get('anchor_timestamp')]
+    if screen_id == 'stale_repricing':
+        return [
+            candidate_row.get('anchor_timestamp'),
+            candidate_row.get('pre_anchor_market_timestamp'),
+            candidate_row.get('post_anchor_market_timestamp'),
+        ]
+    ...
+```
+
+```bash
+python3 -m pytest tests/test_structural_mispricing_evaluation.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.evaluation --screen-run-manifest data/structural_mispricing/screens/screen_run_manifest.json --output-root data/structural_mispricing
+python3 -m pytest tests/ -v --tb=short
+```
+
+---
+
+## Add cadence/capacity/portfolio overlays as deterministic evaluation artifacts
+**Date:** 2026-04-05
+**Context:** kalshi-agent/python structural-mispricing evaluation extension
+**Tags:** structural-mispricing, evaluation, cadence, capacity, portfolio-constraints, deterministic-replay
+
+### Problem / Observation
+
+Evaluation needed VAL-EVAL-009/010/011/012/013/014/019/021/023 outputs (cadence split, ex-ante sizing buckets, allocation/capital constraints, family/regime comparability, reason vocabulary, deterministic rerun hash, observed-vs-modeled breakout) without regressing existing entry/exit replay tests.
+
+### Resolution / Insight
+
+Keep existing candidate/trade replay semantics unchanged, then layer deterministic analytics artifacts on top:
+- chronological `allocation_ledger.jsonl` (capital + concurrency simulation),
+- bucketed `capacity_ledger.jsonl` from fixed ex-ante sizing policy,
+- `family_regime_comparisons.jsonl`,
+- `deterministic_replay.json` using normalized business fields with run-specific IDs removed.
+
+Embed summary rollups + reconciliation flags in `evaluation_summary.json`, and declare sizing/regime/tradeability policies in `run_manifest.json`.
+
+### Commands / Code
+
+```python
+deterministic_payload = {
+    "candidate_rows": _normalized_for_replay_hash(candidate_eval_rows, drop_keys={"trade_id"}),
+    "trade_rows": _normalized_for_replay_hash(trade_rows, drop_keys={"trade_id"}),
+    "allocation_rows": _normalized_for_replay_hash(allocation_rows, drop_keys={"trade_id"}),
+}
+business_replay_hash = sha256(json.dumps(deterministic_payload, sort_keys=True).encode("utf-8")).hexdigest()
+```
+
+```bash
+python3 -m pytest tests/test_structural_mispricing_evaluation.py -v --tb=short
+python3 -m kalshi_agent.structural_mispricing.evaluation --screen-run-manifest data/structural_mispricing/screens/screen_run_manifest.json --output-root data/structural_mispricing
+python3 -m pytest tests/ -v --tb=short
+```
+

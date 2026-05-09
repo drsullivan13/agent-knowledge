@@ -765,3 +765,99 @@ assert all(row["reason_code"] == "insufficient_depth_snapshot" for row in thin_r
 assert all(row["anchor_source_id"] == "related_contract_anchor" for row in thin_rows)
 assert all(row["related_contract_ids"] for row in thin_rows)
 ```
+
+---
+
+## Flatten tuple-key Counters before writing JSON validation reports
+**Date:** 2026-04-05
+**Context:** Factory user-testing flow validator, Python JSON report generation
+**Tags:** factory, user-testing, python, json, counter, validation, reports
+
+### Problem / Observation
+
+While building a flow-validator evidence/report JSON, a `Counter` keyed by tuples like `(screen_status, tradeability_status)` caused `json.dumps(...)` to fail with:
+
+```text
+TypeError: keys must be str, int, float, bool or None, not tuple
+```
+
+This is easy to hit when validation output summarizes paired statuses or other multi-field combinations.
+
+### Resolution / Insight
+
+Keep tuple-keyed `Counter` objects for in-memory checks, but flatten them into string-keyed dictionaries (or nested dicts) before serializing the final JSON payload.
+
+### Commands / Code
+
+```python
+screen_tradeability_counts = Counter(
+    (row["screen_status"], row["tradeability_status"])
+    for row in candidate_rows
+)
+
+json_safe_counts = {
+    f"{screen_status}|{tradeability_status}": count
+    for (screen_status, tradeability_status), count in screen_tradeability_counts.items()
+}
+
+payload = {
+    "status_pairs": json_safe_counts,
+}
+```
+
+---
+
+## Isolate a pushable feature branch with a temporary worktree from origin/master
+**Date:** 2026-05-09
+**Context:** git, cherry-pick, branch isolation, dirty local repo
+**Tags:** git, worktree, cherry-pick, branch, remote, isolation
+
+### Problem / Observation
+
+A local repo can be far ahead of `origin/master` with unrelated commits and a dirty working tree, which makes `git push` unsafe for a single feature. Cherry-picking only the latest fix commit into a clean branch may fail if that commit depends on earlier feature commits that also are not on `origin/master`.
+
+### Resolution / Insight
+
+Create a temporary worktree from `origin/master`, inspect file-specific history to find the full dependent commit chain for the feature, cherry-pick that chain in order, review the isolated range, then push the new branch. This avoids pushing unrelated local commits while keeping the main dirty worktree untouched.
+
+### Commands / Code
+
+```bash
+REPO="/Users/dansullivan/workspace/kalshi-agent"
+
+# Find the full feature commit chain for the touched files
+git -C "$REPO" log --oneline origin/master..HEAD -- \
+  kalshi_agent/gas_paper_runner.py \
+  kalshi_agent/monitoring/alerts.py \
+  kalshi_agent/scheduler.py \
+  kalshi_agent/strategies/gas.py \
+  kalshi_agent/trading_loop.py \
+  tests/test_gas_strategy.py \
+  tests/test_monitoring.py \
+  tests/test_scheduler.py \
+  tests/test_trading_loop.py
+
+WORKTREE=$(mktemp -d "/Users/dansullivan/workspace/kalshi-agent-gasbranch.XXXXXX")
+BRANCH="gas-runtime-fix-$(date +%Y%m%d-%H%M%S)"
+
+git -C "$REPO" worktree add -b "$BRANCH" "$WORKTREE" origin/master
+
+for C in \
+  7d31c145af4b78d47374fa3c6ddb9ede82767501 \
+  ff43a37a2bfbf52b6575f78ce63ba2c906c18da3 \
+  cf8aee43b181b8542ad12ade53f4d9d90ba87e40 \
+  b2950197b775ed804123d06b457805fb8bdac40d \
+  d2c42ab4fb4be19f8da605c61165d133747fa91c \
+  2cdcecb77bbd8c8b0bf1b29253bab1eac8968f6b
+do
+  git -C "$WORKTREE" cherry-pick "$C"
+done
+
+git -C "$WORKTREE" status --short --branch
+git -C "$WORKTREE" diff --cached
+git -C "$WORKTREE" log --oneline origin/master..HEAD
+git -C "$WORKTREE" diff --stat origin/master..HEAD
+git -C "$WORKTREE" push -u origin "$BRANCH"
+
+git -C "$REPO" worktree remove "$WORKTREE"
+```

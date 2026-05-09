@@ -91,3 +91,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Collection reproducibility validators should ignore run-scoped capture metadata | learnings/patterns.md | structural-mispricing, collection, validation, reproducibility, lineage, checksums | 2026-04-05 |
 | Fallback comparator captures may map to source-selection inventory under a different source role | learnings/tools.md | factory, user-testing, structural-mispricing, collection, provenance, fallback, artifacts | 2026-04-05 |
 | Structural screen flow reports can be built from run-scoped stale/thin ledgers plus screen summary | learnings/tools.md | factory, user-testing, structural-mispricing, screens, flow-report, artifacts | 2026-04-05 |
+| Flatten tuple-key Counters before writing JSON validation reports | learnings/tools.md | factory, user-testing, python, json, counter, validation, reports | 2026-04-05 |
+| Isolate a pushable feature branch with a temporary worktree from origin/master | learnings/tools.md | git, worktree, cherry-pick, branch, remote, isolation | 2026-05-09 |
+| Scope no-lookahead provenance to screen-specific timestamps | learnings/patterns.md | structural-mispricing, evaluation, lookahead, timestamps, validation | 2026-04-05 |
+| Add cadence/capacity/portfolio overlays as deterministic evaluation artifacts | learnings/patterns.md | structural-mispricing, evaluation, cadence, capacity, portfolio-constraints, deterministic-replay | 2026-04-05 |
