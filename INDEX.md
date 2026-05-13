@@ -95,3 +95,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Isolate a pushable feature branch with a temporary worktree from origin/master | learnings/tools.md | git, worktree, cherry-pick, branch, remote, isolation | 2026-05-09 |
 | Scope no-lookahead provenance to screen-specific timestamps | learnings/patterns.md | structural-mispricing, evaluation, lookahead, timestamps, validation | 2026-04-05 |
 | Add cadence/capacity/portfolio overlays as deterministic evaluation artifacts | learnings/patterns.md | structural-mispricing, evaluation, cadence, capacity, portfolio-constraints, deterministic-replay | 2026-04-05 |
+| Fix venv notebooks where `!pip` fails with `No module named pip` | learnings/tools.md | python, venv, jupyter, pip, ensurepip, dependencies | 2026-05-13 |

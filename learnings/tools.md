@@ -861,3 +861,34 @@ git -C "$WORKTREE" push -u origin "$BRANCH"
 
 git -C "$REPO" worktree remove "$WORKTREE"
 ```
+
+---
+
+## Fix venv notebooks where `!pip` fails with `No module named pip`
+**Date:** 2026-05-13
+**Context:** Python virtualenv + Jupyter notebook homework setup
+**Tags:** python, venv, jupyter, pip, ensurepip, dependencies
+
+### Problem / Observation
+
+Notebook setup cells using `!pip install ...` failed immediately with:
+`<project>/.venv/bin/python: No module named pip`, and downstream imports like `numpy` and `datasets` failed.
+
+### Resolution / Insight
+
+Bootstrap pip directly inside the notebook kernel's virtualenv using `python -m ensurepip --default-pip`, then install dependencies via that same interpreter (`.venv/bin/python -m pip ...`). This restores `!pip` behavior and fixes import failures.
+
+### Commands / Code
+
+```bash
+VENV="/absolute/path/to/project/.venv/bin/python"
+
+"$VENV" -m ensurepip --default-pip
+"$VENV" -m pip install -q scikit-learn numpy matplotlib syllables datasets huggingface_hub
+"$VENV" - <<'PY'
+import numpy, sklearn, matplotlib, syllables
+from datasets import load_dataset
+from huggingface_hub import hf_hub_download
+print("imports_ok")
+PY
+```
