@@ -18,6 +18,8 @@ Scan this file first to avoid duplicating existing knowledge.
 | Python signal handlers + long `time.sleep()` can delay shutdown indefinitely | learnings/gotchas.md | python, signals, sleep, graceful-shutdown, sigint, sigterm | 2026-03-15 |
 | Terraform `templatefile` needs `$${VAR}` for literal shell expansion | learnings/gotchas.md | terraform, templatefile, user-data, bash, escaping | 2026-03-15 |
 | Use project venv python when pyenv blocks `python3` | learnings/tools.md | python, pyenv, venv, path, cli | 2026-03-15 |
+| Python 3.14 lacks gensim/scipy wheels; recreate venv on 3.12 with uv | learnings/gotchas.md | python, python3.14, uv, venv, gensim, scipy, wheels, ipykernel | 2026-06-08 |
+| word2vec-google-news-300 swap-thrashes on 8GB RAM; use restrict_vocab | learnings/gotchas.md | gensim, word2vec, memory, swap, restrict_vocab, most_similar, keyedvectors | 2026-06-08 |
 | `.factory/init.sh` may append Terraform ignores into `.gitignore` | learnings/tools.md | git, init-script, gitignore, terraform, factory | 2026-03-16 |
 | `storizzi/notes-exporter` exports all Apple Notes folders; isolate the target folder from output | learnings/tools.md | apple-notes, macos, markdown, export, applescript, cli | 2026-03-18 |
 | CloudWatch `filter-log-events` with `--limit` returns earliest events unless you bound time | learnings/tools.md | aws, cloudwatch, logs, cli, validation | 2026-03-18 |
@@ -96,3 +98,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Scope no-lookahead provenance to screen-specific timestamps | learnings/patterns.md | structural-mispricing, evaluation, lookahead, timestamps, validation | 2026-04-05 |
 | Add cadence/capacity/portfolio overlays as deterministic evaluation artifacts | learnings/patterns.md | structural-mispricing, evaluation, cadence, capacity, portfolio-constraints, deterministic-replay | 2026-04-05 |
 | Fix venv notebooks where `!pip` fails with `No module named pip` | learnings/tools.md | python, venv, jupyter, pip, ensurepip, dependencies | 2026-05-13 |
+| Kalshi event lookups nest gas markets under `event.markets` | learnings/gotchas.md | kalshi, gas, api, events, diagnostics, lambda | 2026-05-16 |
+| Latest AMI data sources can force unrelated EC2 replacement in Lambda-only Terraform plans | learnings/gotchas.md | terraform, aws, ec2, ami, lambda, plan, deployment | 2026-05-16 |

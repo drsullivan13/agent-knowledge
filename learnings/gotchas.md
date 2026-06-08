@@ -35,6 +35,72 @@ def apply_live_defaults(secret_dir: Path = _project_root() / ".secrets") -> dict
     private_key_path = secret_dir / "kalshi_private_key.key"
 ```
 
+---
+
+## Kalshi event lookups nest gas markets under `event.markets`
+**Date:** 2026-05-16
+**Context:** kalshi-agent gas market diagnostics
+**Tags:** kalshi, gas, api, events, diagnostics, lambda
+
+### Problem / Observation
+
+`get_event(event_ticker, with_nested_markets=True)` can return a successful payload while the market list is nested under `payload["event"]["markets"]` rather than top-level `payload["markets"]`. A probe that only reads the top-level key will report `count=0` even though the event has active markets.
+
+### Resolution / Insight
+
+When building diagnostics, extract markets from both shapes. Also infer the event ticker from a returned market ticker (for example `KXAAAGASW-26MAY18-4.520` → `KXAAAGASW-26MAY18`) before event lookup; date-derived tickers can be wrong on non-release days.
+
+### Commands / Code
+
+```python
+def _extract_markets(payload):
+    raw = []
+    if isinstance(payload, Mapping):
+        raw = payload.get("markets", [])
+        if not raw and isinstance(payload.get("event"), Mapping):
+            raw = payload["event"].get("markets", [])
+    return [market for market in raw if isinstance(market, Mapping)] if isinstance(raw, list) else []
+```
+
+```bash
+python3 -m kalshi_agent.gas_market_probe
+KALSHI_LAMBDA_GAS_MODE=market_probe python3 -m kalshi_agent.lambda_gas_runner
+```
+
+---
+
+## Latest AMI data sources can force unrelated EC2 replacement in Lambda-only Terraform plans
+**Date:** 2026-05-16
+**Context:** Terraform AWS EC2 + Lambda migration
+**Tags:** terraform, aws, ec2, ami, lambda, plan, deployment
+
+### Problem / Observation
+
+Adding opt-in Lambda resources and running `terraform plan -var='enable_lambda_gas_runner=true'` unexpectedly proposed `-/+` replacement of an existing EC2 instance because `data.aws_ami.amazon_linux_2023` had drifted to a newer AMI. This can mask otherwise safe Lambda-only plans and risks replacing an unrelated long-running host.
+
+### Resolution / Insight
+
+For existing singleton EC2 hosts whose AMI should not roll on unrelated applies, add `lifecycle { ignore_changes = [ami] }` or pin the AMI explicitly. Re-run both default and feature-enabled plans; the expected safe shape is no changes by default and only Lambda/IAM/Scheduler resources added when enabled.
+
+### Commands / Code
+
+```hcl
+resource "aws_instance" "trading_agent" {
+  ami = data.aws_ami.amazon_linux_2023.id
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
+}
+```
+
+```bash
+terraform -chdir=infra plan -no-color
+terraform -chdir=infra plan -no-color \
+  -var='enable_lambda_gas_runner=true' \
+  -var='lambda_image_tag=dummy-lambda-gas-runner'
+```
+
 ```python
 self.assertEqual(os.path.realpath(actual), os.path.realpath(expected))
 ```
@@ -1281,4 +1347,55 @@ for url in urls:
     )
     print(url, out.stdout.strip(), datetime.now(tz=UTC).isoformat())
 PY2
+```
+
+---
+
+## Python 3.14 has no wheels for gensim/scipy; recreate venv with uv on 3.12
+**Date:** 2026-06-08
+**Context:** Python data/NLP project (uv-managed venv), CIS 5300 HW4 word embeddings
+**Tags:** python, python3.14, uv, venv, gensim, scipy, numpy, wheels, ipykernel
+
+### Problem / Observation
+A `uv`-created `.venv` defaulted to Python 3.14.x. Installing the NLP stack failed because gensim and scipy ship no 3.14 wheels yet, and the bare venv also lacked `ipykernel`, so VSCode could not use it as a Jupyter kernel.
+
+### Resolution / Insight
+Recreate the venv pinned to 3.12, install deps directly into it, and pin `requires-python = ">=3.12"` in pyproject. Select the `.venv (Python 3.12.x)` kernel in VSCode afterward.
+
+### Commands / Code
+```bash
+uv venv --python 3.12                       # creates .venv on 3.12.x
+.venv/bin/python -m pip --version 2>/dev/null || true
+uv pip install ipykernel numpy scipy scikit-learn gensim matplotlib huggingface_hub python-docx
+.venv/bin/python -c "import gensim, scipy, numpy; print(gensim.__version__, scipy.__version__, numpy.__version__)"
+uv lock
+```
+
+---
+
+## word2vec-google-news-300 thrashes swap on 8GB RAM; use restrict_vocab
+**Date:** 2026-06-08
+**Context:** gensim KeyedVectors on an 8GB Mac, computing analogies / nearest neighbors
+**Tags:** gensim, word2vec, memory, swap, restrict_vocab, most_similar, fill_norms, keyedvectors
+
+### Problem / Observation
+`api.load('word2vec-google-news-300')` (3M x 300 = ~3.6GB resident) loads in ~16s once cached, but on an 8GB machine:
+- The first `most_similar()` call triggers `fill_norms`/normalized-vector materialization, allocating a SECOND ~3.6GB array (~7GB total) -> heavy swap, can blow past a 300s timeout.
+- A from-scratch analogy that does `np.linalg.norm(emb.vectors, axis=1)` + `emb.vectors @ target` rescans the full 3.6GB array EVERY call; with other apps competing for RAM the array gets partially swapped, so each call took ~50s.
+RSS sitting far below 3.6GB with low CPU% is the tell that it is paging, not computing. Check with `sysctl vm.swapusage` and `sysctl -n hw.memsize`.
+
+### Resolution / Insight
+Google-News vectors are frequency-ordered, so restrict candidate scans to the top ~200k words. `restrict_vocab=200000` keeps scans to ~240MB (fits in RAM), runs in ms, and returns identical top neighbors for common query words. For batch analysis, prefer `emb.most_similar(positive=..., negative=..., restrict_vocab=...)` over recomputing norms per call. Or just run on Colab (~12.7GB RAM) where the full model is fine. Docker on the same Mac does NOT help (shares/caps host RAM).
+
+### Commands / Code
+```python
+# fast, memory-safe nearest neighbors + analogy on an 8GB box
+emb.most_similar('bank', topn=15, restrict_vocab=200000)
+emb.most_similar(positive=['woman','king'], negative=['man'], topn=5, restrict_vocab=200000)
+```
+```bash
+# diagnose paging vs compute
+sysctl -n hw.memsize | awk '{printf "%.1f GB\n",$1/1073741824}'
+sysctl vm.swapusage
+ps -o rss=,pcpu= -p <PID> | awk '{printf "RSS=%.0fMB CPU=%s%%\n",$1/1024,$2}'
 ```
