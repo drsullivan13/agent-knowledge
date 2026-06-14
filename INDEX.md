@@ -22,6 +22,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | word2vec-google-news-300 swap-thrashes on 8GB RAM; use restrict_vocab | learnings/gotchas.md | gensim, word2vec, memory, swap, restrict_vocab, most_similar, keyedvectors | 2026-06-08 |
 | `.factory/init.sh` may append Terraform ignores into `.gitignore` | learnings/tools.md | git, init-script, gitignore, terraform, factory | 2026-03-16 |
 | `storizzi/notes-exporter` exports all Apple Notes folders; isolate the target folder from output | learnings/tools.md | apple-notes, macos, markdown, export, applescript, cli | 2026-03-18 |
+| Rerun `notes-exporter` Markdown conversion with the project venv after a partial export | learnings/tools.md | apple-notes, notes-exporter, markdownify, python, venv, conda, export | 2026-06-14 |
 | CloudWatch `filter-log-events` with `--limit` returns earliest events unless you bound time | learnings/tools.md | aws, cloudwatch, logs, cli, validation | 2026-03-18 |
 | Factory `Read` may not natively open PDFs larger than 3MB | learnings/tools.md | factory, pdf, read-tool, python, pypdf, workaround | 2026-03-18 |
 | AWS account blocked can fail EC2 RunInstances during Terraform apply | resolutions/aws-account-blocked-ec2-runinstances.md | aws, terraform, ec2, runinstances, account-blocked, deployment | 2026-03-16 |

@@ -95,6 +95,45 @@ cp -R "/path/to/output/md/iCloud-SWOL-NATION" "/path/to/swol-nation-md"
 
 ---
 
+## Rerun `notes-exporter` Markdown conversion with the project venv after a partial export
+**Date:** 2026-06-14
+**Context:** macOS Apple Notes export to Markdown
+**Tags:** apple-notes, notes-exporter, markdownify, python, venv, conda, export
+
+### Problem / Observation
+
+`exportnotes.zsh --convert-markdown true` can still finish AppleScript extraction when `conda` is missing, but the Markdown conversion step may run the wrong `python` and fail with:
+
+```text
+ModuleNotFoundError: No module named 'markdownify'
+```
+
+The script may print "Export completed successfully" despite the Markdown conversion traceback, leaving updated HTML/raw/text files but missing `.md` files.
+
+### Resolution / Insight
+
+Use the project virtualenv Python directly and set `NOTES_EXPORT_ROOT_DIR` to rerun only `convert_to_markdown.py`. The converter reads export tracking JSON and processes only notes whose `lastExportedToMarkdown` is stale.
+
+### Commands / Code
+
+```bash
+cd "/path/to/notes-exporter"
+NOTES_EXPORT_ROOT_DIR="/path/to/output" "/path/to/venv/bin/python" convert_to_markdown.py
+```
+
+Then compare the folder-specific export against the sync target:
+
+```bash
+python3 - <<'PY'
+from pathlib import Path
+src=Path('/path/to/output/md/iCloud-SWOL-NATION')
+dst=Path('/path/to/swol-nation-md')
+print(sorted({p.name for p in src.glob('*.md')} - {p.name for p in dst.glob('*.md')}))
+PY
+```
+
+---
+
 ## CloudWatch `filter-log-events` with `--limit` returns earliest events unless you bound time
 **Date:** 2026-03-18
 **Context:** AWS CLI live-validation log checks
