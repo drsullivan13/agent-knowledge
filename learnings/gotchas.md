@@ -565,6 +565,38 @@ done
 cd /Users/dansullivan/workspace/kalshi-agent/infra && terraform destroy -auto-approve
 ```
 
+## Terraform destroy may leave a Secrets Manager secret in a recovery window
+**Date:** 2026-09-05
+**Context:** kalshi-agent AWS teardown with Terraform
+**Tags:** terraform, aws, secretsmanager, ecr, destroy, teardown, recovery-window
+
+### Problem / Observation
+
+`terraform destroy` removed the managed resources but left the Secrets Manager secret scheduled for deletion. The ECR repository also blocked teardown until its image manifests were deleted because the repository did not enable `force_delete`.
+
+### Resolution / Insight
+
+For a teardown where the stored credentials must be purged immediately, delete all ECR image digests first, retry Terraform, then force-delete the Secrets Manager secret without a recovery window. These operations are irreversible, so use them only after confirming the exact account and resource scope.
+
+### Commands / Code
+```bash
+# Delete all image manifests from the Terraform-managed repository.
+digests=$(aws ecr list-images --region us-east-1 --repository-name kalshi-agent \
+  --filter tagStatus=ANY --query 'imageIds[*].imageDigest' --output text |
+  tr '\t' '\n' | awk 'NF' | sort -u)
+while IFS= read -r digest; do
+  aws ecr batch-delete-image --region us-east-1 --repository-name kalshi-agent \
+    --image-ids imageDigest="$digest"
+done <<< "$digests"
+
+# Retry the Terraform teardown.
+terraform -chdir=infra destroy -auto-approve
+
+# Purge a secret that Terraform only scheduled for deletion.
+aws secretsmanager delete-secret --region us-east-1 \
+  --secret-id kalshi-agent/credentials --force-delete-without-recovery
+```
+
 ---
 
 ## Terraform apply can fail after restoring a Secrets Manager secret unless it is imported
