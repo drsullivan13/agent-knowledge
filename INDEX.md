@@ -107,3 +107,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | ESPN fantasy history can omit roster data needed for bench tiebreaks | learnings/gotchas.md | espn, fantasy-football, boxscore, roster, bench, tiebreak, history | 2026-09-05 |
 
 | Fresh agents can expose newly installed connector tools | learnings/tools.md | codex, plugins, gmail, subagents, stale-tools | 2026-09-05 |
+
+| Herdr and Droid integration setup | tips/herdr-droid-setup.md | herdr, droid, factory, hooks, skills, terminal, configuration | 2026-09-05 |
