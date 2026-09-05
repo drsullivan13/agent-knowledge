@@ -104,3 +104,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Terraform destroy may leave a Secrets Manager secret in a recovery window | learnings/gotchas.md | terraform, aws, secretsmanager, ecr, destroy, teardown, recovery-window | 2026-09-05 |
 
 | Browser contact fields may be populated despite blank text snapshots | learnings/tools.md | cua, browser, forms, screenshots, verification | 2026-09-05 |
+| ESPN fantasy history can omit roster data needed for bench tiebreaks | learnings/gotchas.md | espn, fantasy-football, boxscore, roster, bench, tiebreak, history | 2026-09-05 |

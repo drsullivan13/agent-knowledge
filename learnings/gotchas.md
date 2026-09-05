@@ -1431,3 +1431,40 @@ sysctl -n hw.memsize | awk '{printf "%.1f GB\n",$1/1073741824}'
 sysctl vm.swapusage
 ps -o rss=,pcpu= -p <PID> | awk '{printf "RSS=%.0fMB CPU=%s%%\n",$1/1024,$2}'
 ```
+
+---
+
+## ESPN fantasy history can omit roster data needed for bench tiebreaks
+**Date:** 2026-09-05
+**Context:** ESPN Fantasy Football API / Node.js / `espn-fantasy-football-api`
+**Tags:** espn, fantasy-football, boxscore, roster, bench, tiebreak, history
+
+### Problem / Observation
+
+Weekly power rankings used bench fantasy points to break equal team scores. The
+schedule response exposes team totals but not bench totals. The installed
+`espn-fantasy-football-api` package exposes roster positions and player points
+for current-season boxscores, but its historical scoreboard method explicitly
+returns boxscores without rosters. Some older ESPN boxscores may also disappear.
+
+### Resolution / Insight
+
+Fetch `getBoxscoreForWeek` only for weeks containing equal fantasy scores. Sum
+players whose parsed `position === "Bench"`. Treat missing roster data or equal
+bench totals as an unresolved ranking; never silently use team ID, input order,
+or zero as another tiebreak. Historical standings should remain best-effort and
+label affected coverage.
+
+### Commands / Code
+
+```js
+const boxes = await client.getBoxscoreForWeek({
+  seasonId,
+  matchupPeriodId: week,
+  scoringPeriodId: week
+})
+
+const benchPoints = roster
+  .filter((player) => player.position === 'Bench')
+  .reduce((sum, player) => sum + (Number(player.totalPoints) || 0), 0)
+```
