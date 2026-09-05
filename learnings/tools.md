@@ -931,3 +931,26 @@ from huggingface_hub import hf_hub_download
 print("imports_ok")
 PY
 ```
+
+## Browser contact fields may be populated despite blank text snapshots
+**Date:** 2026-09-05
+**Context:** CUA browser control, Squarespace contact forms
+**Tags:** cua, browser, forms, screenshots, verification
+
+### Problem / Observation
+Email and phone inputs appeared blank in AX and DOM snapshots and read-only value inspection even after input. A screenshot showed they were populated. Retyping without selecting all duplicated the email. A CUA binding also disappeared between turns while its browser tab survived.
+
+### Resolution / Insight
+Inspect a screenshot before retrying apparently missing contact-field values. To correct a visible populated field, click it, select all, type the replacement, blur, and verify visually. Rediscover current browser/tab IDs after a lost binding; do not reuse IDs across browser providers. Verify a submission confirmation rather than treating a Submit click as success.
+
+### Commands / Code
+```javascript
+await cua.getState();
+let tab = await cua.getTab(observedTabId, {browser: observedBrowserId});
+await tab.getScreenshot();
+await tab.click(observedFieldCoordinates);
+await tab.pressKey('super+a');
+await tab.typeText(approvedValue);
+await tab.pressKey('Tab');
+await tab.getScreenshot();
+```

@@ -102,3 +102,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Kalshi event lookups nest gas markets under `event.markets` | learnings/gotchas.md | kalshi, gas, api, events, diagnostics, lambda | 2026-05-16 |
 | Latest AMI data sources can force unrelated EC2 replacement in Lambda-only Terraform plans | learnings/gotchas.md | terraform, aws, ec2, ami, lambda, plan, deployment | 2026-05-16 |
 | Terraform destroy may leave a Secrets Manager secret in a recovery window | learnings/gotchas.md | terraform, aws, secretsmanager, ecr, destroy, teardown, recovery-window | 2026-09-05 |
+
+| Browser contact fields may be populated despite blank text snapshots | learnings/tools.md | cua, browser, forms, screenshots, verification | 2026-09-05 |
