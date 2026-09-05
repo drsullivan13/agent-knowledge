@@ -105,3 +105,5 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Browser contact fields may be populated despite blank text snapshots | learnings/tools.md | cua, browser, forms, screenshots, verification | 2026-09-05 |
 | ESPN fantasy history can omit roster data needed for bench tiebreaks | learnings/gotchas.md | espn, fantasy-football, boxscore, roster, bench, tiebreak, history | 2026-09-05 |
+
+| Fresh agents can expose newly installed connector tools | learnings/tools.md | codex, plugins, gmail, subagents, stale-tools | 2026-09-05 |

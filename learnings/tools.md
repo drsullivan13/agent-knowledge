@@ -954,3 +954,20 @@ await tab.typeText(approvedValue);
 await tab.pressKey('Tab');
 await tab.getScreenshot();
 ```
+
+## Fresh agents can expose newly installed connector tools
+**Date:** 2026-09-05
+**Context:** Codex plugin discovery
+**Tags:** codex, plugins, gmail, subagents, stale-tools
+
+### Problem / Observation
+After Gmail installation and an explicit app mention, the existing task's ALL_TOOLS still contained no Gmail actions. This did not mean account connection had failed.
+
+### Resolution / Insight
+A fresh subagent, explicitly requested by the user, exposed Gmail tools and successfully verified the account with get_profile and a narrow read-only search. A separately created fresh Codex task also exposed gmail.get_profile. Prefer fresh-session verification before claiming the plugin itself is unavailable. Do not create user-owned tasks or subagents without applicable authorization. Sending capability being listed is not proof a message was sent.
+
+### Commands / Code
+```javascript
+text(ALL_TOOLS.filter(t => /gmail|tool_search/.test(t.name)));
+```
+When authorized, spawn_agent with task_name verify_gmail_plugin and instructions to inspect tools, verify only profile/read access, and send nothing. A fresh create_thread diagnostic is another user-authorized option.
