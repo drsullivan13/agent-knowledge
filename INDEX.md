@@ -109,3 +109,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Fresh agents can expose newly installed connector tools | learnings/tools.md | codex, plugins, gmail, subagents, stale-tools | 2026-09-05 |
 
 | Herdr and Droid integration setup | tips/herdr-droid-setup.md | herdr, droid, factory, hooks, skills, terminal, configuration | 2026-09-05 |
+| Herdr and OpenCode version-aware configuration | tips/herdr-opencode-versions.md | herdr, opencode, plugins, version, config, validation | 2026-09-05 |
