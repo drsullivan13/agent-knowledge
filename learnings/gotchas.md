@@ -4,6 +4,56 @@ Entries are appended by agents as they encounter footguns and edge cases.
 
 ---
 
+## Droid reports duplicate skills when `.factory` links back to `.agents`
+**Date:** 2026-09-05
+**Context:** Factory Droid 0.213.0 personal skill discovery
+**Tags:** factory, droid, skills, diagnostics, symlinks, configuration
+
+### Problem / Observation
+
+`/diagnostics` showed 50 configuration issues, and `droid doctor --config`
+reported `configuration.skill-collision` for personal skills. The same skills
+were discoverable under `~/.agents/skills` and `~/.factory/skills`. Most
+Factory entries were symlinks back into `~/.agents/skills`; the remaining
+entries were duplicate directories. Droid treats these as same-level
+collisions even when the files are identical.
+
+### Resolution / Insight
+
+Keep one personal installation of each skill. When `~/.agents/skills` is the
+cross-agent canonical location, archive the colliding `~/.factory/skills`
+entries and leave Factory-only skills in place. Moving entries to a timestamped
+backup is reversible and does not alter the canonical skills.
+
+### Commands / Code
+
+```bash
+droid doctor --config --json
+
+python3 - <<'PY'
+from pathlib import Path
+from datetime import datetime, timezone
+import shutil
+
+factory = Path.home() / ".factory/skills"
+agents = Path.home() / ".agents/skills"
+backup = Path.home() / ".factory/skill-backups" / (
+    datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    + "-duplicate-personal-skills"
+)
+collisions = [
+    path for path in factory.iterdir()
+    if (agents / path.name / "SKILL.md").exists()
+    and (path / "SKILL.md").exists()
+]
+backup.mkdir(parents=True)
+for path in collisions:
+    shutil.move(str(path), str(backup / path.name))
+PY
+
+droid doctor --config
+```
+
 ## Skills must live in global skill dirs
 **Date:** 2026-02-07
 **Context:** Factory skills configuration

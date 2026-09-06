@@ -110,3 +110,4 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Herdr and Droid integration setup | tips/herdr-droid-setup.md | herdr, droid, factory, hooks, skills, terminal, configuration | 2026-09-05 |
 | Herdr and OpenCode version-aware configuration | tips/herdr-opencode-versions.md | herdr, opencode, plugins, version, config, validation | 2026-09-05 |
+| Droid reports duplicate skills when `.factory` links back to `.agents` | learnings/gotchas.md | factory, droid, skills, diagnostics, symlinks, configuration | 2026-09-05 |
