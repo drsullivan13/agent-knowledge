@@ -1,7 +1,7 @@
 ## Diagnose Vercel runtime, asset, and Git authentication failures separately
-**Date:** 2026-09-05
+**Date:** 2026-09-06
 **Context:** Vercel Git deployments, Chromium, GitHub CLI
-**Tags:** vercel, deployment, environment-variables, secrets, chromium, orb, cdn, github, gh, authentication
+**Tags:** vercel, deployment, environment-variables, secrets, chromium, orb, cdn, github, gh, authentication, ssh
 
 ### Problem / Observation
 
@@ -26,7 +26,13 @@ Treat these as independent deployment layers:
 3. If `gh auth status` succeeds from the keyring but Git operations fail, remove
    overriding token variables and configure Git from the keyring login. If the
    active OAuth token lacks `workflow` scope, pushing over SSH can use the
-   account's SSH authorization instead.
+   account's SSH authorization instead. When invalid `GH_TOKEN` or
+   `GITHUB_TOKEN` values break both GitHub HTTPS API calls and HTTPS pushes,
+   first verify that the existing SSH key can read the repository, then push
+   directly to its SSH URL. Supplying the SSH URL to `git push` avoids changing
+   the configured remote. `gh api` cannot reuse Git/SSH-key authentication; it
+   still requires valid GitHub API credentials. Never print token values while
+   diagnosing this failure.
 
 ### Commands / Code
 
@@ -70,4 +76,12 @@ gh auth setup-git
 # Alternative when an HTTPS OAuth token lacks workflow scope.
 git remote set-url origin git@github.com:<owner>/<repo>.git
 git push
+
+# If the configured remote must remain unchanged, verify SSH read access and
+# publish directly to the SSH URL.
+git ls-remote git@github.com:OWNER/REPO.git HEAD
+git -C /absolute/repo push git@github.com:OWNER/REPO.git main:main
+
+# `gh api` does not use the SSH key; repair or replace its API credential
+# separately, without echoing GH_TOKEN or GITHUB_TOKEN.
 ```
