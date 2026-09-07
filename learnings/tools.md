@@ -971,3 +971,25 @@ A fresh subagent, explicitly requested by the user, exposed Gmail tools and succ
 text(ALL_TOOLS.filter(t => /gmail|tool_search/.test(t.name)));
 ```
 When authorized, spawn_agent with task_name verify_gmail_plugin and instructions to inspect tools, verify only profile/read access, and send nothing. A fresh create_thread diagnostic is another user-authorized option.
+
+## X article browser access can succeed after web fetch 403
+**Date:** 2026-09-07
+**Context:** Codex browser, public X articles
+**Tags:** x, twitter, browser, cua, articles, digest
+
+### Problem / Observation
+
+Direct web fetch of https://x.com/pvncher/status/2095991462416490862?s=46 returned 403.
+
+### Resolution / Insight
+
+The in-app browser displayed the full article text in its accessibility snapshot while logged out. This establishes access for this post only, not private bookmarks/DMs or all X content. Try supported browser navigation before concluding a public article requires paid API access.
+
+### Commands / Code
+
+Using cua_repl, first select the browser, then create the tab in a separate call:
+```javascript
+let browser = await cua.getBrowser({url: "https://x.com/pvncher/status/2095991462416490862?s=46"});
+let xTab = await cua.createBrowserTab(browser.browserId, "https://x.com/pvncher/status/2095991462416490862?s=46", {visible:false});
+```
+The initial tab snapshot included the article title and complete body.

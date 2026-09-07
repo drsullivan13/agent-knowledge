@@ -112,3 +112,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Herdr and OpenCode version-aware configuration | tips/herdr-opencode-versions.md | herdr, opencode, plugins, version, config, validation | 2026-09-05 |
 | Droid reports duplicate skills when `.factory` links back to `.agents` | learnings/gotchas.md | factory, droid, skills, diagnostics, symlinks, configuration | 2026-09-05 |
 | Diagnose Vercel runtime, asset, and Git authentication failures separately | resolutions/vercel-runtime-assets-github-auth.md | vercel, deployment, environment-variables, secrets, chromium, orb, cdn, github, gh, authentication, ssh | 2026-09-06 |
+
+| X article browser access can succeed after web fetch 403 | learnings/tools.md | x, twitter, browser, cua, articles, digest | 2026-09-07 |
