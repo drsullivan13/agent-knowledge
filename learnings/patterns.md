@@ -1157,3 +1157,17 @@ When building a fetch layer with SSRF guards and size bounds (paper-boy fetch.py
 - Capture `response.encoding` INSIDE the `with client.stream(...)` block; the variable stays bound after the block but capturing it inside avoids possibly-unbound mypy complaints.
 - httpx exception messages embed the full request URL (including query strings/userinfo that may carry secrets). Log/record only `type(exc).__name__`, never `str(exc)`, and sanitize URLs to scheme://host/path for notes.
 - Shortener dedupe: after following a redirect, canonicalize the Location URL and check the evidence cache BEFORE issuing the final GET — two shortened forms of one article then cost exactly one article fetch.
+
+## Prove "committed before dispatch" with an in-transport fresh DB connection
+
+When a test must prove a SQLite row was COMMITTED before an HTTP request was
+dispatched (e.g. a cost reservation before a paid API call), run the assertion
+INSIDE the `httpx.MockTransport` handler using a SECOND `sqlite3.connect()` to
+the same db file. A fresh connection only sees committed rows, so seeing the
+row there proves commit-before-dispatch (same-connection reads would see
+uncommitted data and prove nothing). Requirements: file-backed DB (not
+`:memory:`), the production code must `conn.commit()` before the httpx call,
+and that call must happen outside any caller-held transaction. Example shape
+(paper-boy tests/test_xai_client.py): handler does
+`other = sqlite3.connect(db_path); rows = other.execute("SELECT ... FROM cost_ledger").fetchall()`
+then records `rows` for post-call assertions.

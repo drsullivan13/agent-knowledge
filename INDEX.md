@@ -125,3 +125,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Localhost servers can require sandbox escalation even on loopback | learnings/tools.md | codex, sandbox, localhost, python, http-server, browser | 2026-09-07 |
 | sqlite3 `with conn:` does not make DDL migrations atomic | learnings/gotchas.md | python, sqlite3, migrations, ddl, transactions, rollback | 2026-09-07 |
 | httpx safe fetcher: manual redirects + streamed byte cap | learnings/patterns.md | httpx, ssrf, redirects, byte-cap, sanitization, python | 2026-09-07 |
+| Prove committed-before-dispatch via in-transport fresh sqlite connection | learnings/patterns.md | python, sqlite, httpx, mock-transport, testing, transactions | 2026-09-07 |
