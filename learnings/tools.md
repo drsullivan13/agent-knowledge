@@ -1021,3 +1021,23 @@ payload, _ = json.JSONDecoder().raw_decode(text[start:])
 is_indoor = row["roof"].lower() in {"dome", "closed", "retractable roof"}
 is_indoor = is_indoor or row.get("stadium") in reviewed_indoor_stadiums
 ```
+
+## Localhost servers can require sandbox escalation even on loopback
+**Date:** 2026-09-07
+**Context:** Codex desktop, local web development, Python HTTP server
+**Tags:** codex, sandbox, localhost, python, http-server, browser
+
+### Problem / Observation
+
+Starting `python3 -m http.server 8765 --bind 127.0.0.1` inside the workspace sandbox failed at `socket.bind()` with `PermissionError: [Errno 1] Operation not permitted`, even though the server was loopback-only.
+
+### Resolution / Insight
+
+Rerun the same loopback-only command with sandbox escalation. A narrowly scoped reusable approval prefix of `python3 -m http.server` is sufficient. Verify the response with a localhost HEAD request, then open the URL in the in-app browser and mark the tab as a deliverable if the user should keep it.
+
+### Commands / Code
+
+```bash
+python3 -m http.server 8765 --bind 127.0.0.1
+curl -I http://127.0.0.1:8765/
+```
