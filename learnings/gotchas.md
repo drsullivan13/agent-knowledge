@@ -1526,3 +1526,26 @@ const benchPoints = roster
 - Working minimal structured-output payload: `{model, input, reasoning: {effort: "none"}, max_output_tokens, text: {format: {type: "json_schema", name, schema, strict: true}}, store: false, stream: false}`.
 - Usage billing is in `usage.cost_in_usd_ticks` (integer, 1 USD = 1e10 ticks); a 64-max-token json_schema probe cost ~0.0001 USD. Note: input had cached_tokens counted; input_tokens (236) was larger than the raw prompt, likely schema overhead.
 - Tags: xai, grok, responses-api, tool_choice, json_schema, billing-ticks
+
+## Python sqlite3: `with conn:` does NOT make DDL migrations atomic
+
+**Context:** Python 3.12 sqlite3, numbered transactional DB migrations.
+**Problem:** In legacy transaction mode (default `isolation_level=""`), sqlite3 only
+opens implicit transactions around DML (INSERT/UPDATE/DELETE/REPLACE) — never DDL.
+A migration of `CREATE TABLE` statements wrapped in `with conn:` auto-commits each
+statement; a later failing statement leaves earlier CREATEs behind despite rollback.
+**Fix:** Use explicit transaction control for migrations:
+```python
+conn.execute("BEGIN")
+try:
+    for stmt in statements:
+        conn.execute(stmt)
+except sqlite3.Error:
+    conn.execute("ROLLBACK")
+    raise
+else:
+    conn.execute("COMMIT")
+```
+Test rollback with a deliberately failing migration and assert the partial tables
+are absent. (`executescript` is also wrong: it implicitly COMMITs first.)
+**Tags:** python, sqlite3, migrations, ddl, transactions, rollback
