@@ -117,3 +117,6 @@ Scan this file first to avoid duplicating existing knowledge.
 | Make Codex delegate substantial coding to a Herdr Droid | tips/codex-delegate-to-herdr-droid.md | codex, agents-md, herdr, droid, factory, delegation, configuration | 2026-09-07 |
 | X bookmarks OAuth2 success can still be blocked by billing | resolutions/x-bookmarks-oauth-billing.md | x-api, oauth2, bookmarks, billing, security | 2026-09-07 |
 | xAI tool_choice with empty tools array returns 400; omit both fields | learnings/gotchas.md | xai, grok, responses-api, tool_choice, json_schema, billing-ticks | 2026-09-07 |
+| [espn-fantasy-api-pagination-ownership-quirks](resolutions/espn-fantasy-api-pagination-ownership-quirks.md) | ESPN fantasy API needs a sort in X-Fantasy-Filter, limit<=100 for ownership, ownership nested in player |
+| [frozen-clock-retry-tests-cadence-floor](tips/frozen-clock-retry-tests-cadence-floor.md) | Expected retry elapsed time is max(backoff, cadence), not backoff alone |
+| [zod-python-canonical-json-key-order](tips/zod-python-canonical-json-key-order.md) | Compare dicts semantically in JS gates over Python canonical JSON; JSON.stringify is key-order-sensitive |
