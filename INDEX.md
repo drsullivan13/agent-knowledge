@@ -114,3 +114,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Diagnose Vercel runtime, asset, and Git authentication failures separately | resolutions/vercel-runtime-assets-github-auth.md | vercel, deployment, environment-variables, secrets, chromium, orb, cdn, github, gh, authentication, ssh | 2026-09-06 |
 
 | X article browser access can succeed after web fetch 403 | learnings/tools.md | x, twitter, browser, cua, articles, digest | 2026-09-07 |
+| Make Codex delegate substantial coding to a Herdr Droid | tips/codex-delegate-to-herdr-droid.md | codex, agents-md, herdr, droid, factory, delegation, configuration | 2026-09-07 |
