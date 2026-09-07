@@ -1549,3 +1549,6 @@ else:
 Test rollback with a deliberately failing migration and assert the partial tables
 are absent. (`executescript` is also wrong: it implicitly COMMITs first.)
 **Tags:** python, sqlite3, migrations, ddl, transactions, rollback
+
+## Injected sleep for retry/Backoff paths in pytest (paper-boy)
+When a CLI feature honors `Retry-After` with real `time.sleep`, never exercise that path through the end-to-end CLI entrypoint in pytest — inject a `sleep` callable into the underlying function instead and keep CLI-level tests to non-waiting scenarios. A `429 Retry-After: 45` x3 scenario run through `main()` hung the suite for 135s. Pattern: `scan(..., sleep=waits.append)` records waits on a fake clock; assert on the recorded list.
