@@ -1552,3 +1552,9 @@ are absent. (`executescript` is also wrong: it implicitly COMMITs first.)
 
 ## Injected sleep for retry/Backoff paths in pytest (paper-boy)
 When a CLI feature honors `Retry-After` with real `time.sleep`, never exercise that path through the end-to-end CLI entrypoint in pytest — inject a `sleep` callable into the underlying function instead and keep CLI-level tests to non-waiting scenarios. A `429 Retry-After: 45` x3 scenario run through `main()` hung the suite for 135s. Pattern: `scan(..., sleep=waits.append)` records waits on a fake clock; assert on the recorded list.
+
+## Falsy-zero config override gotcha (paper-boy)
+`cfg.value or DEFAULT` silently swallows an explicit `0` from env overrides (e.g. `PAPER_BOY_FETCH_MAX_FETCHES=0` meant "fetch nothing" but `0 or 20` gave 20). For optional int/float config where 0 is meaningful, use `x if x is not None else DEFAULT`. Tests that rely on "disable via 0" catch this only if they exist — add one when adding the override.
+
+## Ordering gates in a CLI pipeline: security gates before policy gates (paper-boy)
+When a command has both an identity/auth gate and a policy refusal (e.g. deadline), run the identity check first even if the policy refusal could be cheaper: validators and security tests require the wrong-account error to win in all clock states. Keep the zero-network idempotency short-circuit before BOTH (ready-state check needs no API calls).
