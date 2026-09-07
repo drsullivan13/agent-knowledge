@@ -121,3 +121,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | [frozen-clock-retry-tests-cadence-floor](tips/frozen-clock-retry-tests-cadence-floor.md) | Expected retry elapsed time is max(backoff, cadence), not backoff alone |
 | [zod-python-canonical-json-key-order](tips/zod-python-canonical-json-key-order.md) | Compare dicts semantically in JS gates over Python canonical JSON; JSON.stringify is key-order-sensitive |
 | [live-fetch-timestamp-classification-bug](resolutions/live-fetch-timestamp-classification-bug.md) | Never validate event timestamps against pre-event clock captures; frozen clocks hide live-time bugs |
+| FantasyPros rankings are embedded as `ecrData`, and half-PPR has a dedicated slug | learnings/tools.md | fantasypros, fantasy-football, scraping, json, half-ppr, rankings | 2026-09-07 |

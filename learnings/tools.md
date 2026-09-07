@@ -993,3 +993,31 @@ let browser = await cua.getBrowser({url: "https://x.com/pvncher/status/209599146
 let xTab = await cua.createBrowserTab(browser.browserId, "https://x.com/pvncher/status/2095991462416490862?s=46", {visible:false});
 ```
 The initial tab snapshot included the article title and complete body.
+
+## FantasyPros rankings are embedded as `ecrData`, and half-PPR has a dedicated slug
+**Date:** 2026-09-07
+**Context:** Python, fantasy-football rankings ingestion
+**Tags:** fantasypros, fantasy-football, scraping, json, half-ppr, rankings
+
+### Problem / Observation
+
+The general rankings URL can return a page without the expected embedded ranking payload when used as a half-PPR snapshot. A parser searching for `var ecrData = ` then fails with a substring error. Future NFL schedules can also leave the `roof` column blank for known dome and retractable-roof venues.
+
+### Resolution / Insight
+
+Use FantasyPros' dedicated half-PPR cheatsheet slug and parse the JavaScript object with `json.JSONDecoder().raw_decode` rather than a fragile regular expression. For indoor-game counts, treat nflverse `roof` as primary but fall back to a reviewed set of known indoor stadium names when future schedule rows omit roof metadata.
+
+### Commands / Code
+
+```bash
+curl -L 'https://www.fantasypros.com/nfl/rankings/half-point-ppr-cheatsheets.php' -o fantasypros-half.html
+```
+
+```python
+text = Path("fantasypros-half.html").read_text(encoding="utf-8")
+start = text.index("var ecrData = ") + len("var ecrData = ")
+payload, _ = json.JSONDecoder().raw_decode(text[start:])
+
+is_indoor = row["roof"].lower() in {"dome", "closed", "retractable roof"}
+is_indoor = is_indoor or row.get("stadium") in reviewed_indoor_stadiums
+```
