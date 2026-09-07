@@ -120,3 +120,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | [espn-fantasy-api-pagination-ownership-quirks](resolutions/espn-fantasy-api-pagination-ownership-quirks.md) | ESPN fantasy API needs a sort in X-Fantasy-Filter, limit<=100 for ownership, ownership nested in player |
 | [frozen-clock-retry-tests-cadence-floor](tips/frozen-clock-retry-tests-cadence-floor.md) | Expected retry elapsed time is max(backoff, cadence), not backoff alone |
 | [zod-python-canonical-json-key-order](tips/zod-python-canonical-json-key-order.md) | Compare dicts semantically in JS gates over Python canonical JSON; JSON.stringify is key-order-sensitive |
+| [live-fetch-timestamp-classification-bug](resolutions/live-fetch-timestamp-classification-bug.md) | Never validate event timestamps against pre-event clock captures; frozen clocks hide live-time bugs |
