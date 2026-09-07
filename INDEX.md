@@ -115,3 +115,4 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | X article browser access can succeed after web fetch 403 | learnings/tools.md | x, twitter, browser, cua, articles, digest | 2026-09-07 |
 | Make Codex delegate substantial coding to a Herdr Droid | tips/codex-delegate-to-herdr-droid.md | codex, agents-md, herdr, droid, factory, delegation, configuration | 2026-09-07 |
+| X bookmarks OAuth2 success can still be blocked by billing | resolutions/x-bookmarks-oauth-billing.md | x-api, oauth2, bookmarks, billing, security | 2026-09-07 |
