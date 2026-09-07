@@ -1147,3 +1147,13 @@ python3 -m kalshi_agent.structural_mispricing.evaluation --screen-run-manifest d
 python3 -m pytest tests/ -v --tb=short
 ```
 
+
+## Safe HTTP fetcher with httpx: manual redirects + streamed byte cap
+
+When building a fetch layer with SSRF guards and size bounds (paper-boy fetch.py, 2026-09):
+
+- Use `httpx.Client(follow_redirects=False)` and follow `Location` manually with `urljoin`, re-validating every hop (scheme in http/https, port in {80,443}, `ipaddress.ip_address(host).is_global` blocks private/loopback/link-local literals). Auto-follow would bypass per-hop validation.
+- Enforce byte caps by streaming: `with client.stream("GET", url) as r:` then accumulate `r.iter_bytes(65536)` and break past the cap; mark the result truncated. Works fine with `httpx.MockTransport` in tests.
+- Capture `response.encoding` INSIDE the `with client.stream(...)` block; the variable stays bound after the block but capturing it inside avoids possibly-unbound mypy complaints.
+- httpx exception messages embed the full request URL (including query strings/userinfo that may carry secrets). Log/record only `type(exc).__name__`, never `str(exc)`, and sanitize URLs to scheme://host/path for notes.
+- Shortener dedupe: after following a redirect, canonicalize the Location URL and check the evidence cache BEFORE issuing the final GET — two shortened forms of one article then cost exactly one article fetch.
