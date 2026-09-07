@@ -1518,3 +1518,11 @@ const benchPoints = roster
   .filter((player) => player.position === 'Bench')
   .reduce((sum, player) => sum + (Number(player.totalPoints) || 0), 0)
 ```
+
+## xAI Responses API: tool_choice with empty tools fails (2026-09-07)
+- Context: xAI `/v1/responses` readiness probe, model `grok-4.3`.
+- Failure: sending `"tools": []` with `"tool_choice": "none"` returns HTTP 400, code `invalid-argument`: "A tool_choice was set on the request but no tools were specified."
+- Fix: omit BOTH `tools` and `tool_choice` entirely from the payload when no tools are used. Do not send empty arrays.
+- Working minimal structured-output payload: `{model, input, reasoning: {effort: "none"}, max_output_tokens, text: {format: {type: "json_schema", name, schema, strict: true}}, store: false, stream: false}`.
+- Usage billing is in `usage.cost_in_usd_ticks` (integer, 1 USD = 1e10 ticks); a 64-max-token json_schema probe cost ~0.0001 USD. Note: input had cached_tokens counted; input_tokens (236) was larger than the raw prompt, likely schema overhead.
+- Tags: xai, grok, responses-api, tool_choice, json_schema, billing-ticks
