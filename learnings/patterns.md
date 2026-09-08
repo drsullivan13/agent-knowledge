@@ -1300,3 +1300,6 @@ uv run pytest -q
 uv run ruff check .
 uv run mypy src tests
 ```
+
+## Fragment-assembled sentinel URLs for secrecy-grep-clean repos
+When a contract requires `git grep` for a secret-shaped pattern (e.g. `hooks.slack.com/services`) to be EMPTY over the repo, test fixtures and even redaction regexes must not contain the literal. Assemble at runtime from fragments: `"https://hooks.slack.com" + "/services/" + "SENTINEL/..."` for values; split regexes into adjacent literals `r"hooks\.slack\.com" r"/services/\S+"`. Also: apply exact registered-secret replacement BEFORE pattern-based redaction, or the pattern fires first and leaves host residue. Enforce with an in-repo pytest that walks the tree (skipping .git/.env/gitignored dirs) and asserts the needles are absent — fragment the needles in the test itself or it self-matches. (paper-boy m4, 2026-09)
