@@ -1211,6 +1211,49 @@ uv run ruff check .
 uv run mypy src tests
 ```
 
+## Feedback-driven ranking must reorder rendered output
+**Date:** 2026-09-08
+**Context:** Paper Boy, Python 3.12, SQLite, xAI digest renderer
+**Tags:** paper-boy, feedback, interest-profile, ranking, sqlite, digest, pytest
+
+### Problem / Observation
+
+The digest renderer sends candidate items to the model in a deterministic
+order, but the model output can be cached or can preserve a different order.
+Sorting only the open evidence set is therefore insufficient to make a
+feedback-weighted order observable in `digest.json` and `digest.md`.
+
+### Resolution / Insight
+
+Apply the learned interest score in two places: sort the open candidate rows
+before building the evidence manifest, then sort the validated model topics
+again while constructing the rendered document. Use a stable original-index
+tie-breaker and never filter rows based on score. Derive topic text from both
+post/title data and any durable `topic_items` associations.
+
+### Commands / Code
+
+```python
+rows = conn.execute(OPEN_ITEMS_SQL).fetchall()
+return feedback.rank_rows(conn, rows)  # returns every row
+```
+
+```python
+ordered_topics = sorted(
+    enumerate(output.topics),
+    key=lambda pair: (-feedback.score_text(conn, candidates[pair[1].item_id].post_text),
+                      pair[0]),
+)
+for _, topic in ordered_topics:
+    ...
+```
+
+```bash
+uv run pytest -q
+uv run ruff check .
+uv run mypy src tests
+```
+
 ## Paper Boy quiet-day discovery gates before feed I/O
 **Date:** 2026-09-07
 **Context:** Python 3.12, SQLite, httpx, RSS/Atom discovery

@@ -129,3 +129,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | httpx safe fetcher: manual redirects + streamed byte cap | learnings/patterns.md | httpx, ssrf, redirects, byte-cap, sanitization, python | 2026-09-07 |
 | Prove committed-before-dispatch via in-transport fresh sqlite connection | learnings/patterns.md | python, sqlite, httpx, mock-transport, testing, transactions | 2026-09-07 |
 | Paper Boy hardening: durable tokens and strict artifact verification | learnings/patterns.md | paper-boy, sqlite, tokens, fsync, markdown, artifact-integrity, pytest | 2026-09-07 |
+| Feedback-driven ranking must reorder rendered output | learnings/patterns.md | paper-boy, feedback, interest-profile, ranking, sqlite, digest, pytest | 2026-09-08 |
