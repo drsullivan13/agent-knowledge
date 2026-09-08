@@ -1210,3 +1210,50 @@ uv run pytest -q
 uv run ruff check .
 uv run mypy src tests
 ```
+
+## Paper Boy quiet-day discovery gates before feed I/O
+**Date:** 2026-09-07
+**Context:** Python 3.12, SQLite, httpx, RSS/Atom discovery
+**Tags:** paper-boy, discovery, rss, atom, sqlite, quiet-day, httpx, testing
+
+### Problem / Observation
+
+Quiet-day discovery must not fetch feeds when bookmark retrieval is
+incomplete, new/pending work exists, or failures remain. A gate evaluated only
+after processing can accidentally clear a pending item and then fetch feeds.
+Using `httpx.Client.get()` also buffers the full feed before an application
+byte cap can run.
+
+### Resolution / Insight
+
+Evaluate the pending-work gate from the committed state immediately before the
+processing phase, then pass that count into rendering. Keep discovery rows
+scoped to the run with a nullable `run_id`, while canonical URLs and title
+similarity dedupe against durable bookmark/discovery history. Fetch feeds with
+`client.stream("GET", ...)` and consume at most the configured byte bound;
+parse RSS/Atom with `xml.etree.ElementTree` and recover only complete entries
+when a truncation cuts the outer document.
+
+### Commands / Code
+
+```python
+gate_pending_items = _pending_item_count(conn)
+process_reasons = _phase_process(...)
+discovery.discover(
+    conn,
+    cfg,
+    pending_items=max(_pending_item_count(conn), gate_pending_items),
+    unresolved_failures=tuple(report.partial_errors) + tuple(process_reasons),
+)
+```
+
+```python
+with client.stream("GET", feed_url) as response:
+    body, truncated = _read_bounded(response, max_bytes)
+```
+
+```bash
+uv run pytest -q
+uv run ruff check .
+uv run mypy src tests
+```
