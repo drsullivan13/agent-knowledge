@@ -1041,3 +1041,8 @@ Rerun the same loopback-only command with sandbox escalation. A narrowly scoped 
 python3 -m http.server 8765 --bind 127.0.0.1
 curl -I http://127.0.0.1:8765/
 ```
+
+## Git commit messages with apostrophes via heredoc
+
+`git commit -m "$(cat <<'EOF' ... EOF)"` breaks when the message body contains apostrophes in some non-interactive shells (unexpected EOF parse error). Safer: use multiple `-m` flags with double-quoted strings — apostrophes inside double quotes are fine. Also note: a parse failure means NOTHING in the command ran, so any `git add` earlier in the chain must be re-run.
+Tags: git, commit, heredoc, quoting, shell
