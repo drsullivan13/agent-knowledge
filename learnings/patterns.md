@@ -1316,3 +1316,9 @@ the appended string is stable and the dedup holds; also dedupe any secondary
 event-log inserts keyed on the same note. Found in paper-boy discovery gate
 notes (misc-m4-delivery-polish). Regression test: invoke the append path twice
 with the persisted output of the first pass as the second pass's input.
+
+## Incidentally-passing regression tests mask the behavior they claim to pin
+
+Pattern seen in paper-boy (2026-09): a test named "X retries on resume" scripted TWO composed failures (HTTP 5xx fetch + a fail-once xAI mock). It passed even after a regression made failure #1 silently tolerated, because failure #2 still forced the expected exit state. When a review says a test "passes only incidentally", the fix is:
+1. Write a new test that scripts ONLY the target failure and asserts the full causal chain (exit state, no downstream phase reached — e.g. mock request list empty, no artifacts on disk, DB item states).
+2. Rewrite the composed test to assert the true ordering under the fixed behavior (which phase fails first, call counts per invocation), instead of deleting it — the composition still guards interaction between the two failure paths.
