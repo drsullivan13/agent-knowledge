@@ -114,6 +114,7 @@ Scan this file first to avoid duplicating existing knowledge.
 | Diagnose Vercel runtime, asset, and Git authentication failures separately | resolutions/vercel-runtime-assets-github-auth.md | vercel, deployment, environment-variables, secrets, chromium, orb, cdn, github, gh, authentication, ssh | 2026-09-06 |
 
 | X article browser access can succeed after web fetch 403 | learnings/tools.md | x, twitter, browser, cua, articles, digest | 2026-09-07 |
+| Paper Boy deadline policy and throwaway output isolation | learnings/gotchas.md | paper-boy, deadline, auth, zoneinfo, testing, temporary-state | 2026-09-07 |
 | Make Codex delegate substantial coding to a Herdr Droid | tips/codex-delegate-to-herdr-droid.md | codex, agents-md, herdr, droid, factory, delegation, configuration | 2026-09-07 |
 | X bookmarks OAuth2 success can still be blocked by billing | resolutions/x-bookmarks-oauth-billing.md | x-api, oauth2, bookmarks, billing, security | 2026-09-07 |
 | xAI tool_choice with empty tools array returns 400; omit both fields | learnings/gotchas.md | xai, grok, responses-api, tool_choice, json_schema, billing-ticks | 2026-09-07 |

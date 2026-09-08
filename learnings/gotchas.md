@@ -1558,3 +1558,39 @@ When a CLI feature honors `Retry-After` with real `time.sleep`, never exercise t
 
 ## Ordering gates in a CLI pipeline: security gates before policy gates (paper-boy)
 When a command has both an identity/auth gate and a policy refusal (e.g. deadline), run the identity check first even if the policy refusal could be cheaper: validators and security tests require the wrong-account error to win in all clock states. Keep the zero-network idempotency short-circuit before BOTH (ready-state check needs no API calls).
+
+## Paper Boy deadline policy and throwaway output isolation
+**Date:** 2026-09-07
+**Context:** Paper Boy Python CLI, injected HTTP transports and clocks
+**Tags:** paper-boy, deadline, auth, zoneinfo, testing, temporary-state
+
+### Problem / Observation
+
+An injected late-run harness correctly isolated SQLite with `PAPER_BOY_HOME`,
+but the CLI still wrote artifacts to the repository's relative `output/`
+directory. Deadline tests also need to preserve the security ordering between
+identity verification and the late policy gate.
+
+### Resolution / Insight
+
+Keep identity/auth first: the security contract requires a wrong-account or
+auth error to win in all clock states. A late gate then records a durable
+`deadline_refusals` status event without creating a `runs` row and skips
+bookmark polling and later paid work. Exactly 06:30 local is accepted;
+06:30:01 is refused. For manual injected CLI checks, set both
+`PAPER_BOY_HOME` and `PAPER_BOY_OUTPUT_DIR` to throwaway paths.
+
+### Commands / Code
+
+```python
+env["PAPER_BOY_HOME"] = str(tmp / "state")
+env["PAPER_BOY_OUTPUT_DIR"] = str(tmp / "output")
+main(
+    ["run", "--date", "2026-09-07", "--no-deliver"],
+    environ=env,
+    x_transport=httpx.MockTransport(x_script),
+    fetch_transport=httpx.MockTransport(fetch_script),
+    xai_transport=httpx.MockTransport(xai_script),
+    now=lambda: fixed_clock,
+)
+```
