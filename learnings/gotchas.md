@@ -1641,3 +1641,11 @@ conn.execute(
     (canonical_url,),
 )
 ```
+
+## pytest caplog misses loggers with propagate=False
+Tags: pytest, logging, caplog
+When application code calls `logger.propagate = False` (common for sanitized app loggers), pytest's `caplog` (root-handler based) captures nothing from that logger, and test ordering matters (any test invoking the CLI config flips propagate). Fix: attach a collecting `logging.Handler` directly to the named logger in a contextmanager and remove it in `finally`. Used in paper-boy tests/test_x_client.py (`captured_log_messages`).
+
+## X OAuth2 refresh responses echo the console app's scope superset
+Tags: x-api, oauth, scopes
+X's `POST /2/oauth2/token` (grant_type=refresh_token) response `scope` field lists every scope the Developer Console app has enabled (write/DM included), NOT the four requested at authorization. Refresh requests carry no `scope` parameter, so clients enforcing a scope allowlist must narrow-on-record (persist the allowlist intersection, warn on dropped names) rather than reject the superset — rejecting strands the server-rotated refresh token and kills all further API calls.
