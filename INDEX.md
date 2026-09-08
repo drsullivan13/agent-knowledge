@@ -131,3 +131,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Paper Boy hardening: durable tokens and strict artifact verification | learnings/patterns.md | paper-boy, sqlite, tokens, fsync, markdown, artifact-integrity, pytest | 2026-09-07 |
 | Feedback-driven ranking must reorder rendered output | learnings/patterns.md | paper-boy, feedback, interest-profile, ranking, sqlite, digest, pytest | 2026-09-08 |
 | Paper Boy feed previews must reactivate bookmark fetches | learnings/gotchas.md | paper-boy, discovery, sqlite, fetch-cache, retries, foreign-keys | 2026-09-08 |
+| Fragment-assembled sentinel URLs for secrecy-grep-clean repos | learnings/patterns.md | secrecy, redaction, git-grep, sentinels, slack-webhook, paper-boy | 2026-09-08 |
