@@ -1171,3 +1171,42 @@ and that call must happen outside any caller-held transaction. Example shape
 (paper-boy tests/test_xai_client.py): handler does
 `other = sqlite3.connect(db_path); rows = other.execute("SELECT ... FROM cost_ledger").fetchall()`
 then records `rows` for post-call assertions.
+
+## Paper Boy hardening: durable tokens and strict artifact verification
+**Date:** 2026-09-07
+**Context:** Python 3.12, sqlite3, httpx, Paper Boy CLI
+**Tags:** paper-boy, sqlite, tokens, fsync, markdown, artifact-integrity, pytest
+
+### Problem / Observation
+
+Review hardening found several boundary cases that passed the normal CLI tests:
+token replacement was not flushed before `os.replace`, malformed migration
+`BEGIN` escaped as raw sqlite errors, digest length counted Markdown link
+destinations, and `output verify` trusted a manifest when its database or
+artifact rows were missing.
+
+### Resolution / Insight
+
+Flush and `os.fsync()` the temporary token file before replacement. Wrap
+`BEGIN`, migration statements, and `COMMIT` in the same error boundary, and
+preserve the original exception if rollback itself cannot start. For Markdown
+word limits, remove link destinations and syntax before counting visible words.
+For artifact verification, require the database, matching run row, and all
+`digest_md`, `digest_json`, and `ready_json` artifact rows; do not silently
+fall back to manifest-to-disk hashes.
+
+### Commands / Code
+
+```python
+with os.fdopen(fd, "w") as handle:
+    json.dump(record.to_dict(), handle)
+    handle.flush()
+    os.fsync(handle.fileno())
+os.replace(tmp_path, path)
+```
+
+```bash
+uv run pytest -q
+uv run ruff check .
+uv run mypy src tests
+```
