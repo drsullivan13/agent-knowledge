@@ -133,3 +133,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Paper Boy feed previews must reactivate bookmark fetches | learnings/gotchas.md | paper-boy, discovery, sqlite, fetch-cache, retries, foreign-keys | 2026-09-08 |
 | Fragment-assembled sentinel URLs for secrecy-grep-clean repos | learnings/patterns.md | secrecy, redaction, git-grep, sentinels, slack-webhook, paper-boy | 2026-09-08 |
 | Use git commit -F for shell-sensitive messages | tips/git-commit-message-file.md | git, commit, heredoc, quoting, harness | 2026-09-08 |
+| Derived annotations must not feed back into their derivation input | learnings/patterns.md | python, dedup, state, idempotency, crash-resume | 2026-09-08 |

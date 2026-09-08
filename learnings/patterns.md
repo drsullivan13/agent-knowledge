@@ -1303,3 +1303,16 @@ uv run mypy src tests
 
 ## Fragment-assembled sentinel URLs for secrecy-grep-clean repos
 When a contract requires `git grep` for a secret-shaped pattern (e.g. `hooks.slack.com/services`) to be EMPTY over the repo, test fixtures and even redaction regexes must not contain the literal. Assemble at runtime from fragments: `"https://hooks.slack.com" + "/services/" + "SENTINEL/..."` for values; split regexes into adjacent literals `r"hooks\.slack\.com" r"/services/\S+"`. Also: apply exact registered-secret replacement BEFORE pattern-based redaction, or the pattern fires first and leaves host residue. Enforce with an in-repo pytest that walks the tree (skipping .git/.env/gitignored dirs) and asserts the needles are absent — fragment the needles in the test itself or it self-matches. (paper-boy m4, 2026-09)
+
+## Derived annotations must never be fed back into their own derivation input
+
+When a function appends a derived note to persisted state (e.g. a gate note
+built from a run's stored `coverage_reasons`) and exact-match dedup guards the
+append, the dedup silently fails if a re-run passes the persisted state —
+including previously derived notes — back into the derivation. The new note
+string differs each pass, so it compounds ("note (reason; note (reason))").
+Fix: filter your own derived notes (by prefix) out of the derivation input so
+the appended string is stable and the dedup holds; also dedupe any secondary
+event-log inserts keyed on the same note. Found in paper-boy discovery gate
+notes (misc-m4-delivery-polish). Regression test: invoke the append path twice
+with the persisted output of the first pass as the second pass's input.
