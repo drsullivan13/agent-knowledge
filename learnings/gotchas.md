@@ -1556,8 +1556,13 @@ When a CLI feature honors `Retry-After` with real `time.sleep`, never exercise t
 ## Falsy-zero config override gotcha (paper-boy)
 `cfg.value or DEFAULT` silently swallows an explicit `0` from env overrides (e.g. `PAPER_BOY_FETCH_MAX_FETCHES=0` meant "fetch nothing" but `0 or 20` gave 20). For optional int/float config where 0 is meaningful, use `x if x is not None else DEFAULT`. Tests that rely on "disable via 0" catch this only if they exist — add one when adding the override.
 
-## Ordering gates in a CLI pipeline: security gates before policy gates (paper-boy)
-When a command has both an identity/auth gate and a policy refusal (e.g. deadline), run the identity check first even if the policy refusal could be cheaper: validators and security tests require the wrong-account error to win in all clock states. Keep the zero-network idempotency short-circuit before BOTH (ready-state check needs no API calls).
+## Ordering gates in a CLI pipeline: eligibility before eligible-run auth (paper-boy)
+When a command has both an identity/auth gate and a scheduling policy refusal,
+keep the zero-network ready-run idempotency short-circuit first, then evaluate
+fresh-run eligibility. A fresh invocation outside the deadline grace window must
+refuse before identity or token-refresh traffic; once eligible, verify identity
+before the first paid/resource read such as bookmarks. Do not let a wrong-account
+case bypass the eligible-run identity-before-bookmarks contract.
 
 ## Paper Boy deadline policy and throwaway output isolation
 **Date:** 2026-09-07
@@ -1569,16 +1574,18 @@ When a command has both an identity/auth gate and a policy refusal (e.g. deadlin
 An injected late-run harness correctly isolated SQLite with `PAPER_BOY_HOME`,
 but the CLI still wrote artifacts to the repository's relative `output/`
 directory. Deadline tests also need to preserve the security ordering between
-identity verification and the late policy gate.
+fresh-run scheduling-before-network ordering and eligible-run
+identity-before-bookmarks ordering.
 
 ### Resolution / Insight
 
-Keep identity/auth first: the security contract requires a wrong-account or
-auth error to win in all clock states. A late gate then records a durable
-`deadline_refusals` status event without creating a `runs` row and skips
-bookmark polling and later paid work. Exactly 06:30 local is accepted;
-06:30:01 is refused. For manual injected CLI checks, set both
-`PAPER_BOY_HOME` and `PAPER_BOY_OUTPUT_DIR` to throwaway paths.
+Run the scheduling gate immediately after the ready-run short-circuit. A late
+gate records a durable `deadline_refusals` status event without creating or
+mutating a `runs` row, and it skips identity, token refresh, bookmark polling,
+source fetches, xAI, and other network work. Exactly 06:30 local is accepted;
+06:30:01 is refused. For an eligible run, retain identity verification before
+bookmarks. For manual injected CLI checks, set both `PAPER_BOY_HOME` and
+`PAPER_BOY_OUTPUT_DIR` to throwaway paths.
 
 ### Commands / Code
 
