@@ -1601,3 +1601,43 @@ main(
     now=lambda: fixed_clock,
 )
 ```
+
+## Paper Boy feed previews must reactivate bookmark fetches
+**Date:** 2026-09-08
+**Context:** Paper Boy SQLite source cache and quiet-day discovery
+**Tags:** paper-boy, discovery, sqlite, fetch-cache, retries, foreign-keys
+
+### Problem / Observation
+
+Quiet-day discovery records a canonical feed URL and a preview `sources` row
+so later feed entries can be deduplicated. If that URL is stored as an
+ordinary completed fetch, a later bookmark containing the same URL is treated
+as already evidenced and the article is never fetched. A separate M3 issue
+also required resume retries for transport and HTTP 5xx failures without
+retrying paywalls or terminal 4xx results.
+
+### Resolution / Insight
+
+Keep feed rows marked `urls.fetch_status='feed'` with a provenance
+`{"kind":"feed",...}` marker. When ingestion sees an existing feed URL in a
+bookmark, reset only that row to `fetch_status IS NULL` and clear fetch
+metadata. `fetch.get_cached_source()` must skip feed provenance rows, while
+all real fetch outcomes remain cacheable. For run resume, inspect the
+sanitized fetch provenance JSON: retry `network error` outcomes and numeric
+status codes >= 500; leave paywalls and non-retryable 4xx cached. When
+counting rendered coverage, count distinct non-null `item_id` values plus each
+null-item `digest_item_id`, so deep-read rows do not inflate counts and
+discoveries do not collapse into one `None`.
+
+### Commands / Code
+
+```python
+conn.execute(
+    """
+    UPDATE urls
+    SET fetch_status = NULL, content_hash = NULL, last_fetched_at = NULL
+    WHERE canonical_url = ? AND fetch_status = 'feed'
+    """,
+    (canonical_url,),
+)
+```
