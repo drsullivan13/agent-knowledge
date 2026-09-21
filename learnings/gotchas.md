@@ -1774,3 +1774,33 @@ let days = (0..<count).reversed().map {
     calendar.date(byAdding: .day, value: -$0, to: endDay)!
 }
 ```
+---
+
+## SwiftUI alerts must not share one binding across root and sheet presenters
+**Date:** 2026-09-21
+**Context:** SwiftUI, iOS UI tests, modal form validation
+**Tags:** swiftui, alerts, sheets, presentation, ui-tests
+
+### Problem / Observation
+
+Attaching a root `.alert` and a sheet-local `.alert` to the same `@Published` optional message can make both presentation modifiers react to one state transition. In a simulator UI test, setting the message from a modal form produced no accessible alert, a `Publishing changes from within view updates is not allowed` warning, and the post-failure hierarchy had returned to the root view.
+
+### Resolution / Insight
+
+Give modal validation its own local alert state and reserve the root alert for global model or infrastructure errors. More generally, each alert state should have one presentation owner; do not reuse one `isPresented` binding across a root container and a presented sheet. Preserve separate pairing or camera error presenters as independent channels.
+
+### Commands / Code
+
+```swift
+@State private var validationError: String?
+
+// In the modal form:
+.alert("Baby Tracker", isPresented: Binding(
+    get: { validationError != nil },
+    set: { if !$0 { validationError = nil } }
+)) {
+    Button("OK") { validationError = nil }
+} message: {
+    Text(validationError ?? "")
+}
+```
