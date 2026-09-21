@@ -1746,3 +1746,31 @@ XCTAssertTrue(row.waitForExistence(timeout: 5))
 XCTAssertTrue(row.isHittable)
 row.tap()
 ```
+
+---
+
+## Rolling daily averages should exclude the current partial day
+**Date:** 2026-09-21
+**Context:** Swift calendar statistics, health tracking UI
+**Tags:** swift, statistics, averages, calendar, partial-day, swiftui
+
+### Problem / Observation
+
+A fixed 7- or 30-calendar-day average ending today divides incomplete current-day totals by the full period. It makes the displayed average fall throughout the day and creates a misleading comparison with completed days.
+
+### Resolution / Insight
+
+Keep the live current-day total separate. For rolling averages and trends, convert the selected date and `asOf` to starts of day in the product time zone. If the selected day is today or later, end the period yesterday; otherwise end on the selected past day. Generate dates with calendar day arithmetic, not fixed 24-hour intervals, and test a DST boundary.
+
+### Commands / Code
+
+```swift
+let selectedStart = calendar.startOfDay(for: selectedDay)
+let todayStart = calendar.startOfDay(for: asOf)
+let endDay = selectedStart >= todayStart
+    ? calendar.date(byAdding: .day, value: -1, to: todayStart)!
+    : selectedStart
+let days = (0..<count).reversed().map {
+    calendar.date(byAdding: .day, value: -$0, to: endDay)!
+}
+```
