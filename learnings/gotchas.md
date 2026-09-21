@@ -4,6 +4,44 @@ Entries are appended by agents as they encounter footguns and edge cases.
 
 ---
 
+## Core Data inferred migration can erase unknown entities
+**Date:** 2026-09-21
+**Context:** Swift/Core Data programmatic model compatibility
+**Tags:** swift, core-data, migration, schema, persistence, data-loss
+
+### Problem / Observation
+
+Opening a SQLite store created by an unrelated model with both automatic
+migration and inferred mapping enabled succeeded instead of rejecting the
+unknown schema. Core Data inferred a migration to the current model and removed
+the unknown entity and its rows.
+
+### Resolution / Insight
+
+If an app ships only one model version and has no reviewed migration path,
+disable automatic and inferred migrations. An incompatible store then fails
+with Cocoa error 134100 and remains unchanged. Re-enable migration only after
+shipping retained versioned models and an explicit mapping strategy.
+
+### Commands / Code
+
+```swift
+description.setOption(
+    false as NSNumber,
+    forKey: NSMigratePersistentStoresAutomaticallyOption
+)
+description.setOption(
+    false as NSNumber,
+    forKey: NSInferMappingModelAutomaticallyOption
+)
+```
+
+Test this by creating a temporary store with a different entity, asserting that
+the production container fails to open it, then reopening it with the original
+model and verifying the sentinel row remains.
+
+---
+
 ## Droid reports duplicate skills when `.factory` links back to `.agents`
 **Date:** 2026-09-05
 **Context:** Factory Droid 0.213.0 personal skill discovery
@@ -1649,3 +1687,40 @@ When application code calls `logger.propagate = False` (common for sanitized app
 ## X OAuth2 refresh responses echo the console app's scope superset
 Tags: x-api, oauth, scopes
 X's `POST /2/oauth2/token` (grant_type=refresh_token) response `scope` field lists every scope the Developer Console app has enabled (write/DM included), NOT the four requested at authorization. Refresh requests carry no `scope` parameter, so clients enforcing a scope allowlist must narrow-on-record (persist the allowlist intersection, warn on dropped names) rather than reject the superset — rejecting strands the server-rotated refresh token and kills all further API calls.
+
+## Swift Date round trips and calendar bounds in immutable operation logs
+**Date:** 2026-09-21
+**Context:** Swift Codable, offline operation merging, daily statistics
+**Tags:** swift, codable, dates, offline-sync, statistics
+
+### Problem / Observation
+JSONEncoder's ISO8601 date strategy dropped fractional seconds in an immutable operation payload. Decoding a snapshot made the same operation ID have different contents, triggering collision rejection. Foundation DateInterval.contains includes its endpoint, double-counting an entry at midnight in adjacent days.
+
+### Resolution / Insight
+Use matching default numeric Date encoding/decoding for the internal operation format; parse fractional ISO dates explicitly at the legacy import boundary. Use half-open calendar bounds for event membership. Test exact snapshot equality and events exactly at the next day's start.
+
+### Commands / Code
+```swift
+let bytes = try JSONEncoder().encode(operation)
+let copy = try JSONDecoder().decode(Operation.self, from: bytes)
+XCTAssertEqual(copy, operation)
+let isInDay = event.startedAt >= day.start && event.startedAt < day.end
+```
+
+## Linked iOS frameworks must also be embedded
+**Date:** 2026-09-21
+**Context:** Generated Xcode project, native iOS app
+**Tags:** xcode, ios, frameworks, dyld, simulator
+
+### Problem / Observation
+An unsigned app built successfully but failed to launch because its locally built dynamic frameworks were not in the app bundle.
+
+### Resolution / Insight
+Set framework DYLIB_INSTALL_NAME_BASE to @rpath. Add an app Copy Files phase targeting Frameworks (dstSubfolderSpec 10) with CodeSignOnCopy and RemoveHeadersOnCopy for each framework. A successful compile alone is insufficient; install and launch the simulator app.
+
+### Commands / Code
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+xcrun simctl install booted '/tmp/build/Build/Products/Debug-iphonesimulator/Example.app'
+xcrun simctl launch booted com.example.app
+```

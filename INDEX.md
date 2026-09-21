@@ -134,3 +134,6 @@ Scan this file first to avoid duplicating existing knowledge.
 | Fragment-assembled sentinel URLs for secrecy-grep-clean repos | learnings/patterns.md | secrecy, redaction, git-grep, sentinels, slack-webhook, paper-boy | 2026-09-08 |
 | Use git commit -F for shell-sensitive messages | tips/git-commit-message-file.md | git, commit, heredoc, quoting, harness | 2026-09-08 |
 | Derived annotations must not feed back into their derivation input | learnings/patterns.md | python, dedup, state, idempotency, crash-resume | 2026-09-08 |
+| Core Data inferred migration can erase unknown entities | learnings/gotchas.md | swift, core-data, migration, schema, persistence, data-loss | 2026-09-21 |
+| Swift Date round trips and calendar bounds in immutable operation logs | learnings/gotchas.md | swift, codable, dates, offline-sync, statistics | 2026-09-21 |
+| Linked iOS frameworks must also be embedded | learnings/gotchas.md | xcode, ios, frameworks, dyld, simulator | 2026-09-21 |
