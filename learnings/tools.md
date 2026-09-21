@@ -1046,3 +1046,22 @@ curl -I http://127.0.0.1:8765/
 
 `git commit -m "$(cat <<'EOF' ... EOF)"` breaks when the message body contains apostrophes in some non-interactive shells (unexpected EOF parse error). Safer: use multiple `-m` flags with double-quoted strings — apostrophes inside double quotes are fine. Also note: a parse failure means NOTHING in the command ran, so any `git add` earlier in the chain must be re-run.
 Tags: git, commit, heredoc, quoting, shell
+
+## Personal Team installation can succeed before the phone trusts the profile
+**Date:** 2026-09-21
+**Context:** Xcode native iOS development installation
+**Tags:** ios, xcode, provisioning, devicectl, sandbox
+
+### Problem / Observation
+A newly signed Personal Team app installed successfully but devicectl launch was rejected with Security / profile not explicitly trusted. Sandboxed codesign verification misleadingly returned CSSMERR_TP_NOT_TRUSTED, and sandboxed devicectl timed out initializing CoreDeviceService.
+
+### Resolution / Insight
+Use approved host access for CoreDeviceService and Keychain-dependent signing checks. Outside the sandbox, the same build validated successfully and its profile included the phone. The user must then trust their Developer App under iPhone Settings → General → VPN & Device Management. Do not reinstall/delete the app to resolve trust. Decode the profile to check its actual expiration date.
+
+### Commands / Code
+```sh
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+codesign --verify --deep --strict --verbose=2 '/tmp/build/Build/Products/Debug-iphoneos/Example.app'
+security cms -D -i '/tmp/build/Build/Products/Debug-iphoneos/Example.app/embedded.mobileprovision' > /tmp/profile.plist
+xcrun devicectl device process launch --device DEVICE_ID com.example.app
+```
