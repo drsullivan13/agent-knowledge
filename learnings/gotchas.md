@@ -1804,3 +1804,31 @@ Give modal validation its own local alert state and reserve the root alert for g
     Text(validationError ?? "")
 }
 ```
+
+---
+
+## Plain SwiftUI list buttons need an explicit hit region
+**Date:** 2026-09-21
+**Context:** SwiftUI List conflict-choice rows, XCTest
+**Tags:** swiftui, button, contentShape, accessibility, ui-tests
+
+### Problem / Observation
+
+Changing a full-row List button to `.buttonStyle(.plain)` improved text colors but caused XCTest's center tap to miss the action when it landed on label whitespace.
+
+### Resolution / Insight
+
+Give the label a full-width frame and explicit rectangular content shape inside the button. A minimum height also preserves an accessible target. The previously failing conflict-resolution UI test passed after this change.
+
+### Commands / Code
+
+```swift
+Button { chooseVersion() } label: {
+    VersionDetails()
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+        .contentShape(Rectangle())
+}
+.buttonStyle(.plain)
+```
+
+The preceding shared-alert diagnosis was also verified: replacing the root alert presenter with a dismissible inline banner, while retaining modal alert presentation, made the invalid-input UI regression pass. The root and modal must not compete to present an alert from the same message transition.

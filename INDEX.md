@@ -142,3 +142,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Rolling daily averages should exclude the current partial day | learnings/gotchas.md | swift, statistics, averages, calendar, partial-day, swiftui | 2026-09-21 |
 | Personal Team installation can succeed before the phone trusts the profile | learnings/tools.md | ios, xcode, provisioning, devicectl, sandbox | 2026-09-21 |
 | Inspect Xcode-optimized app icon PNGs | learnings/tools.md | ios, pngcrush, app-icon, xcode | 2026-09-21 |
+
+| Plain SwiftUI list buttons need an explicit hit region | learnings/gotchas.md | swiftui, button, contentShape, accessibility, ui-tests | 2026-09-21 |
