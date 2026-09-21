@@ -1724,3 +1724,25 @@ export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
 xcrun simctl install booted '/tmp/build/Build/Products/Debug-iphonesimulator/Example.app'
 xcrun simctl launch booted com.example.app
 ```
+
+## SwiftUI lazy history rows need scrolling before UI-test lookup
+**Date:** 2026-09-21
+**Context:** XCUITest, SwiftUI List, timer editor
+**Tags:** swiftui, xctest, lazy-list, accessibility, timers
+
+### Problem / Observation
+A simulator test waited for a timeline button below a graphical calendar and statistics sections. SwiftUI had not created that offscreen row, so waitForExistence failed despite a saved record. Separately, a timer editor exposed a running toggle even though the reducer deliberately preserves a prior stop operation.
+
+### Resolution / Insight
+Scroll the list until the identified row exists and is hittable, with a bounded iteration count. Keep timer lifecycle controls aligned with durable operations: stop through the explicit stop action and create a new timer instead of pretending a metadata edit can undo a stop.
+
+### Commands / Code
+```swift
+for _ in 0..<8 {
+    if row.exists && row.isHittable { break }
+    app.swipeUp()
+}
+XCTAssertTrue(row.waitForExistence(timeout: 5))
+XCTAssertTrue(row.isHittable)
+row.tap()
+```

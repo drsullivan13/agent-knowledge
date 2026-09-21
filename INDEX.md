@@ -137,3 +137,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Core Data inferred migration can erase unknown entities | learnings/gotchas.md | swift, core-data, migration, schema, persistence, data-loss | 2026-09-21 |
 | Swift Date round trips and calendar bounds in immutable operation logs | learnings/gotchas.md | swift, codable, dates, offline-sync, statistics | 2026-09-21 |
 | Linked iOS frameworks must also be embedded | learnings/gotchas.md | xcode, ios, frameworks, dyld, simulator | 2026-09-21 |
+| SwiftUI lazy history rows need scrolling before UI-test lookup | learnings/gotchas.md | swiftui, xctest, lazy-list, accessibility, timers | 2026-09-21 |
