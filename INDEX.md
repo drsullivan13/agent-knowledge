@@ -139,3 +139,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Linked iOS frameworks must also be embedded | learnings/gotchas.md | xcode, ios, frameworks, dyld, simulator | 2026-09-21 |
 | SwiftUI lazy history rows need scrolling before UI-test lookup | learnings/gotchas.md | swiftui, xctest, lazy-list, accessibility, timers | 2026-09-21 |
 | Personal Team installation can succeed before the phone trusts the profile | learnings/tools.md | ios, xcode, provisioning, devicectl, sandbox | 2026-09-21 |
+| Inspect Xcode-optimized app icon PNGs | learnings/tools.md | ios, pngcrush, app-icon, xcode | 2026-09-21 |

@@ -1065,3 +1065,19 @@ codesign --verify --deep --strict --verbose=2 '/tmp/build/Build/Products/Debug-i
 security cms -D -i '/tmp/build/Build/Products/Debug-iphoneos/Example.app/embedded.mobileprovision' > /tmp/profile.plist
 xcrun devicectl device process launch --device DEVICE_ID com.example.app
 ```
+
+## Inspect Xcode-optimized app icon PNGs
+**Date:** 2026-09-21
+**Context:** Native iOS asset verification
+**Tags:** ios, pngcrush, app-icon, xcode
+
+### Problem / Observation
+An AppIcon PNG extracted from an iPhone build was rejected by a normal image viewer although the source PNG was valid. Xcode had applied iPhone PNG optimizations.
+
+### Resolution / Insight
+Decode a copy with Xcode pngcrush before visual inspection; keep the optimized bundle unchanged. Inspecting the bundled 120px icon proves the actual build contains the new artwork, beyond merely inspecting its source.
+
+### Commands / Code
+```sh
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun pngcrush -revert-iphone-optimizations -q '/tmp/build/Example.app/AppIcon60x60@2x.png' /tmp/icon-preview.png
+```
