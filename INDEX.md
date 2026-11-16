@@ -144,3 +144,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Inspect Xcode-optimized app icon PNGs | learnings/tools.md | ios, pngcrush, app-icon, xcode | 2026-09-21 |
 
 | Plain SwiftUI list buttons need an explicit hit region | learnings/gotchas.md | swiftui, button, contentShape, accessibility, ui-tests | 2026-09-21 |
+
+| Verify an embedded consultation calendar | tips/verify-consultation-availability.md | booking, timezone, highlevel, calendar | 2026-11-16 |
