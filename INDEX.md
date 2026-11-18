@@ -147,3 +147,5 @@ Scan this file first to avoid duplicating existing knowledge.
 | Plain SwiftUI list buttons need an explicit hit region | learnings/gotchas.md | swiftui, button, contentShape, accessibility, ui-tests | 2026-09-21 |
 
 | Verify an embedded consultation calendar | tips/verify-consultation-availability.md | booking, timezone, highlevel, calendar | 2026-11-16 |
+
+| Verify browser checkpoint durability under process termination | tips/browser-checkpoint-durability.md | chromium, storage, crash-recovery, playwright | 2026-11-18 |
