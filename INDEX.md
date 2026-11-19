@@ -7,6 +7,7 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Title | File | Tags | Date |
 |-------|------|------|------|
+| Verify an embedded public appointment widget | tips/verify-public-appointment-widget.md | harbor, booking, mobile, dates | 2026-11-19 |
 | Match the Next dev server origin in browser checks | tips/next-local-browser-test-origin.md | nextjs, playwright, origin, localhost, hydration | 2026-11-19 |
 | Verify private fact history after an account switch | tips/harbor-private-facts-account-switch.md | harbor, privacy, owner, inquiry, browser | 2026-11-19 |
 | Verify Harbor rehearsal receipts locally | tips/harbor-rehearsal-receipt-verification.md | harbor, pglite, tsx, sandbox, jsonpath | 2026-11-18 |
