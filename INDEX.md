@@ -160,3 +160,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Verify a live booking click offline | tips/verify-public-form-click-offline.md | booking, playwright, duplicate-prevention | 2026-11-19 |
 | Select a Wix Bookings time slot on mobile | tips/select-wix-bookings-mobile-slot.md | wix, playwright, radio, mobile | 2026-11-19 |
 | Keep browser callbacks portable across Node and tsx | tips/browser-evaluate-tsx-keep-names.md | playwright, tsx, browser | 2026-11-19 |
+| Observe provisional Wix Bookings through receipt hydration | tips/wix-created-confirmation.md | wix, booking, playwright, hydration | 2026-11-19 |
