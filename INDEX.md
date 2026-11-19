@@ -7,6 +7,7 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Title | File | Tags | Date |
 |-------|------|------|------|
+| Bind an approval retry to its provider and consent | tips/multi-office-approval-ids.md | idempotency, postgres, consent | 2026-11-19 |
 | Resolve JSX imports in virtual browser fixtures | tips/esbuild-browser-fixture-jsx.md | esbuild, jsx, fixtures, playwright | 2026-11-19 |
 | Reconcile browser click and network acknowledgement in either order | tips/playwright-acknowledgement-order.md | playwright, chromium, event-order, acknowledgement | 2026-11-19 |
 | Verify Playwright page functions through the repository test entry point | tips/tsx-playwright-evaluate-helper-names.md | tsx, esbuild, chromium, evaluate | 2026-11-19 |
