@@ -157,3 +157,4 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Verify browser checkpoint durability under process termination | tips/browser-checkpoint-durability.md | chromium, storage, crash-recovery, playwright | 2026-11-18 |
 | Verify a live booking click offline | tips/verify-public-form-click-offline.md | booking, playwright, duplicate-prevention | 2026-11-19 |
+| Select a Wix Bookings time slot on mobile | tips/select-wix-bookings-mobile-slot.md | wix, playwright, radio, mobile | 2026-11-19 |
