@@ -153,3 +153,4 @@ Scan this file first to avoid duplicating existing knowledge.
 | Verify an embedded consultation calendar | tips/verify-consultation-availability.md | booking, timezone, highlevel, calendar | 2026-11-16 |
 
 | Verify browser checkpoint durability under process termination | tips/browser-checkpoint-durability.md | chromium, storage, crash-recovery, playwright | 2026-11-18 |
+| Verify a live booking click offline | tips/verify-public-form-click-offline.md | booking, playwright, duplicate-prevention | 2026-11-19 |
