@@ -7,6 +7,7 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Title | File | Tags | Date |
 |-------|------|------|------|
+| Verify private fact history after an account switch | tips/harbor-private-facts-account-switch.md | harbor, privacy, owner, inquiry, browser | 2026-11-19 |
 | Verify Harbor rehearsal receipts locally | tips/harbor-rehearsal-receipt-verification.md | harbor, pglite, tsx, sandbox, jsonpath | 2026-11-18 |
 | Skills must live in global skill dirs | learnings/gotchas.md | skills, factory, configuration, droids, agents | 2026-02-07 |
 | macOS tempfile paths can flip between /var and /private/var | learnings/gotchas.md | macos, pathlib, tempfile, symlink, tests | 2026-03-15 |
