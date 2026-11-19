@@ -7,6 +7,7 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Title | File | Tags | Date |
 |-------|------|------|------|
+| Resolve JSX imports in virtual browser fixtures | tips/esbuild-browser-fixture-jsx.md | esbuild, jsx, fixtures, playwright | 2026-11-19 |
 | Reconcile browser click and network acknowledgement in either order | tips/playwright-acknowledgement-order.md | playwright, chromium, event-order, acknowledgement | 2026-11-19 |
 | Verify Playwright page functions through the repository test entry point | tips/tsx-playwright-evaluate-helper-names.md | tsx, esbuild, chromium, evaluate | 2026-11-19 |
 | Recognize a booking label beside an inline SVG | tips/calendar-icon-label-whitespace.md | playwright, regression, whitespace, calendar | 2026-11-19 |
