@@ -7,6 +7,7 @@ Scan this file first to avoid duplicating existing knowledge.
 
 | Title | File | Tags | Date |
 |-------|------|------|------|
+| Recognize a booking label beside an inline SVG | tips/calendar-icon-label-whitespace.md | playwright, regression, whitespace, calendar | 2026-11-19 |
 | Verify an embedded public appointment widget | tips/verify-public-appointment-widget.md | harbor, booking, mobile, dates | 2026-11-19 |
 | Match the Next dev server origin in browser checks | tips/next-local-browser-test-origin.md | nextjs, playwright, origin, localhost, hydration | 2026-11-19 |
 | Verify private fact history after an account switch | tips/harbor-private-facts-account-switch.md | harbor, privacy, owner, inquiry, browser | 2026-11-19 |
